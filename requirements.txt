@@ -1,0 +1,14 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-WTF
+Flask-Migrate
+scikit-learn
+pandas
+numpy
+plotly
+transformers
+gunicorn
+python-dotenv
+pytest
+flake8
