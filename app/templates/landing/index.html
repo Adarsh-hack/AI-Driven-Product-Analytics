@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 bg-gray-900">
+    <!-- Hero Section -->
+    <div class="py-12 md:py-20 text-center animate-fade-in">
+        <h1 class="text-4xl md:text-5xl font-bold text-white leading-tight max-w-4xl mx-auto">
+            Get Powerful <span class="text-primary-light">Analytics Insights</span> For Your Products
+        </h1>
+        <p class="mt-6 text-xl text-gray-300 max-w-3xl mx-auto">
+            Track user behavior, monitor performance, and make data-driven decisions with our advanced analytics platform.
+        </p>
+        <div class="mt-10">
+            <a href="{{ url_for('auth.register') }}" class="inline-flex items-center px-6 py-3 bg-primary hover:bg-primary-dark text-white text-lg font-medium rounded-md shadow-lg transition-all transform hover:scale-105 mr-4">
+                <i class="fas fa-rocket mr-2"></i> Get Started Free
+            </a>
+            <a href="#features" class="inline-flex items-center px-6 py-3 bg-dark-lighter hover:bg-dark-lightest text-white text-lg font-medium rounded-md border border-gray-700 transition-all">
+                Learn More <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Dashboard Preview -->
+    <div class="relative mt-10 mb-20 animate-slide-up" style="animation-delay: 200ms;">
+        <div class="absolute inset-0 bg-gradient-to-t from-dark-DEFAULT via-transparent to-transparent z-10"></div>
+        <div class="relative z-0 rounded-lg shadow-2xl overflow-hidden border border-gray-700 transform hover:scale-[1.01] transition-all duration-500">
+            <img src="{{ url_for('static', filename='img/dashboard-preview.png') }}" alt="Dashboard Preview" class="w-full h-auto" onerror="this.src='https://placehold.co/1200x600/1e1e2d/6366f1?text=Product+Analytics+Dashboard';this.onerror='';">
+        </div>
+    </div>
+    
+    <!-- Features Section -->
+    <div id="features" class="py-16 animate-slide-up" style="animation-delay: 300ms;">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl font-bold text-white">Powerful Features</h2>
+            <p class="mt-4 text-xl text-gray-400 max-w-3xl mx-auto">Everything you need to understand your users and optimize your product</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Feature 1 -->
+            <div class="bg-dark-lighter rounded-lg p-6 shadow-md hover:shadow-lg transition-all transform hover:translate-y-[-5px] border border-gray-700 hover:border-primary-light">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-indigo-900 bg-opacity-40 text-primary-light mb-5">
+                    <i class="fas fa-chart-line text-xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-3">Real-time Analytics</h3>
+                <p class="text-gray-400">Monitor user activity as it happens with real-time data collection and visualization.</p>
+            </div>
+            
+            <!-- Feature 2 -->
+            <div class="bg-dark-lighter rounded-lg p-6 shadow-md hover:shadow-lg transition-all transform hover:translate-y-[-5px] border border-gray-700 hover:border-primary-light">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-blue-900 bg-opacity-40 text-blue-400 mb-5">
+                    <i class="fas fa-users text-xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-3">User Behavior</h3>
+                <p class="text-gray-400">Track how users navigate through your product with detailed user journey mapping.</p>
+            </div>
+            
+            <!-- Feature 3 -->
+            <div class="bg-dark-lighter rounded-lg p-6 shadow-md hover:shadow-lg transition-all transform hover:translate-y-[-5px] border border-gray-700 hover:border-primary-light">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-green-900 bg-opacity-40 text-green-400 mb-5">
+                    <i class="fas fa-bullseye text-xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-3">Conversion Tracking</h3>
+                <p class="text-gray-400">Set up goals and track conversion rates to measure and optimize business outcomes.</p>
+            </div>
+            
+            <!-- Feature 4 -->
+            <div class="bg-dark-lighter rounded-lg p-6 shadow-md hover:shadow-lg transition-all transform hover:translate-y-[-5px] border border-gray-700 hover:border-primary-light">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-purple-900 bg-opacity-40 text-purple-400 mb-5">
+                    <i class="fas fa-brain text-xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-3">AI Insights</h3>
+                <p class="text-gray-400">Leverage artificial intelligence to uncover patterns and opportunities in your data.</p>
+            </div>
+            
+            <!-- Feature 5 -->
+            <div class="bg-dark-lighter rounded-lg p-6 shadow-md hover:shadow-lg transition-all transform hover:translate-y-[-5px] border border-gray-700 hover:border-primary-light">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-red-900 bg-opacity-40 text-red-400 mb-5">
+                    <i class="fas fa-bell text-xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-3">Custom Alerts</h3>
+                <p class="text-gray-400">Set up notifications for important metrics and events to stay informed at all times.</p>
+            </div>
+            
+            <!-- Feature 6 -->
+            <div class="bg-dark-lighter rounded-lg p-6 shadow-md hover:shadow-lg transition-all transform hover:translate-y-[-5px] border border-gray-700 hover:border-primary-light">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-yellow-900 bg-opacity-40 text-yellow-400 mb-5">
+                    <i class="fas fa-file-export text-xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-3">Export & Integrations</h3>
+                <p class="text-gray-400">Export your data or connect with your favorite tools for seamless workflow.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Call to Action -->
+    <div class="py-16 text-center animate-slide-up" style="animation-delay: 400ms;">
+        <div class="bg-gradient-to-r from-indigo-900 to-purple-900 rounded-xl p-10 shadow-xl">
+            <h2 class="text-3xl font-bold text-white mb-6">Ready to gain insights about your product?</h2>
+            <p class="text-xl text-indigo-200 mb-8 max-w-3xl mx-auto">Join thousands of companies that use Product Analytics to make data-driven decisions.</p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="{{ url_for('auth.register') }}" class="inline-flex items-center justify-center px-6 py-3 bg-white hover:bg-gray-100 text-indigo-900 text-lg font-medium rounded-md shadow-lg transition-all transform hover:scale-105">
+                    <i class="fas fa-user-plus mr-2"></i> Sign Up Free
+                </a>
+                <a href="{{ url_for('auth.login') }}" class="inline-flex items-center justify-center px-6 py-3 bg-transparent hover:bg-white/10 text-white border border-white text-lg font-medium rounded-md transition-all">
+                    <i class="fas fa-sign-in-alt mr-2"></i> Log In
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Smooth scroll for anchor links
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                if (!targetId || targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if (!targetElement) return;
+                
+                window.scrollTo({
+                    top: targetElement.offsetTop - 80, // Account for fixed header
+                    behavior: 'smooth'
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

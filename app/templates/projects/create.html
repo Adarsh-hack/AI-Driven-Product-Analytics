@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Breadcrumb -->
+    <nav class="py-4 animate-fade-in">
+        <ol class="flex text-sm">
+            <li class="flex items-center">
+                <a href="{{ url_for('project.list') }}" class="text-gray-400 hover:text-primary-light transition-colors">Projects</a>
+                <svg class="h-4 w-4 mx-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </li>
+            <li class="text-gray-300">Create Project</li>
+        </ol>
+    </nav>
+
+    <div class="flex justify-center animate-slide-up">
+        <div class="w-full max-w-2xl">
+            <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden shadow-lg">
+                <div class="px-6 py-4 border-b border-gray-700">
+                    <h2 class="text-xl font-semibold text-white">Create a New Project</h2>
+                </div>
+                
+                <div class="p-6">
+                    <p class="text-gray-300 mb-6">A project represents a website or application you want to track analytics for. After creating a project, you'll receive a tracking code to add to your site.</p>
+                    
+                    <form method="post" action="{{ url_for('project.create') }}" class="space-y-6">
+                        {{ form.hidden_tag() }}
+                        
+                        <div>
+                            <label for="{{ form.name.id }}" class="block text-sm font-medium text-gray-300 mb-1">{{ form.name.label.text }}</label>
+                            {{ form.name(class="mt-1 block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-300 focus:outline-none focus:ring-primary-light focus:border-primary-light") }}
+                            {% for error in form.name.errors %}
+                            <div class="mt-1 text-sm text-red-400">{{ error }}</div>
+                            {% endfor %}
+                            <div class="mt-1 text-sm text-gray-500">Choose a descriptive name for your project</div>
+                        </div>
+                        
+                        <div>
+                            <label for="{{ form.description.id }}" class="block text-sm font-medium text-gray-300 mb-1">{{ form.description.label.text }}</label>
+                            {{ form.description(class="mt-1 block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-300 focus:outline-none focus:ring-primary-light focus:border-primary-light", rows="3") }}
+                            {% for error in form.description.errors %}
+                            <div class="mt-1 text-sm text-red-400">{{ error }}</div>
+                            {% endfor %}
+                            <div class="mt-1 text-sm text-gray-500">Optional: Add details about your project</div>
+                        </div>
+                        
+                        <div class="flex justify-between pt-4">
+                            <a href="{{ url_for('project.list') }}" class="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-md text-gray-200 transition-colors">
+                                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                                </svg>
+                                Cancel
+                            </a>
+                            {{ form.submit(class="inline-flex items-center px-4 py-2 bg-primary hover:bg-primary-dark border border-primary-dark rounded-md text-white transition-colors shadow-sm") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Additional Info Card -->
+            <div class="mt-8 bg-gray-800 rounded-lg border border-gray-700 overflow-hidden shadow-lg animate-slide-up" style="animation-delay: 100ms;">
+                <div class="px-6 py-4 border-b border-gray-700">
+                    <h3 class="text-lg font-semibold text-white">What You Can Track</h3>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-indigo-900 bg-opacity-40 text-indigo-400">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-white font-medium">Page Views</h4>
+                                <p class="text-gray-400 text-sm mt-1">Track which pages users visit and how they navigate through your site</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-900 bg-opacity-40 text-blue-400">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-white font-medium">User Interactions</h4>
+                                <p class="text-gray-400 text-sm mt-1">Capture button clicks, form submissions, and other user actions</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-900 bg-opacity-40 text-green-400">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-white font-medium">Conversion Goals</h4>
+                                <p class="text-gray-400 text-sm mt-1">Monitor conversion rates and track campaign performance</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-purple-900 bg-opacity-40 text-purple-400">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-white font-medium">Custom Events</h4>
+                                <p class="text-gray-400 text-sm mt-1">Define and track custom events specific to your business needs</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,813 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    /* Custom scrollbar for code blocks */
+    .code-block::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    .code-block::-webkit-scrollbar-track {
+        background: #1f2937;
+        border-radius: 4px;
+    }
+    
+    .code-block::-webkit-scrollbar-thumb {
+        background: #4b5563;
+        border-radius: 4px;
+    }
+    
+    .code-block::-webkit-scrollbar-thumb:hover {
+        background: #6366f1;
+    }
+    
+    /* Copy tooltip animation */
+    @keyframes fadeInOut {
+        0%, 100% { opacity: 0; }
+        10%, 90% { opacity: 1; }
+    }
+    
+    .copy-tooltip {
+        animation: fadeInOut 2s ease forwards;
+    }
+    
+    /* Card hover effects */
+    .hover-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    
+    .hover-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        border-color: rgba(99, 102, 241, 0.4);
+    }
+    
+    /* Button effects */
+    .action-button {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .action-button::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.5);
+        opacity: 0;
+        border-radius: 100%;
+        transform: scale(1) translate(-50%, -50%);
+        transform-origin: 50% 50%;
+    }
+    
+    .action-button:active::after {
+        opacity: 0.3;
+        transform: scale(60) translate(-50%, -50%);
+        transition: transform 0.6s, opacity 0.6s;
+    }
+    
+    /* Tab indicators */
+    .tab-indicator {
+        position: relative;
+    }
+    
+    .tab-indicator::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: currentColor;
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+        transform-origin: center;
+    }
+    
+    .tab-indicator.active::after {
+        transform: scaleX(1);
+    }
+    
+    /* Connection status pulse */
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+    
+    .connection-status {
+        animation: pulse 2s infinite;
+    }
+    
+    /* Code snippet lines */
+    .code-line {
+        padding: 1px 0;
+    }
+    
+    .code-line:hover {
+        background-color: rgba(75, 85, 99, 0.2);
+    }
+    
+    /* Events table animation */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .event-row {
+        animation: fadeIn 0.5s ease forwards;
+    }
+    
+    /* Page transition overlay */
+    #page-transition-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        background-color: #1e1e2d;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    
+    #page-transition-overlay.active {
+        opacity: 1;
+        pointer-events: all;
+    }
+    
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(99, 102, 241, 0.2);
+        border-radius: 50%;
+        border-top-color: #6366f1;
+        animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Transition Overlay -->
+<div id="page-transition-overlay">
+    <div class="text-center">
+        <div class="spinner mx-auto mb-3"></div>
+        <p class="text-white font-medium" id="loading-text">Loading...</p>
+    </div>
+</div>
+
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Breadcrumb -->
+    <nav class="py-4 animate-fade-in">
+        <ol class="flex flex-wrap text-sm">
+            <li class="flex items-center">
+                <a href="{{ url_for('project.list') }}" class="text-gray-400 hover:text-primary-light transition-colors">Projects</a>
+                <svg class="h-4 w-4 mx-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </li>
+            <li class="text-gray-300">{{ project.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="mb-6 p-4 rounded-md bg-opacity-20 animate-fade-in
+                {% if category == 'success' %} bg-green-900 text-green-200 border border-green-700
+                {% elif category == 'danger' %} bg-red-900 text-red-200 border border-red-700
+                {% elif category == 'warning' %} bg-yellow-900 text-yellow-200 border border-yellow-700
+                {% else %} bg-blue-900 text-blue-200 border border-blue-700
+                {% endif %}">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        {% if category == 'success' %}<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        {% elif category == 'danger' %}<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        {% elif category == 'warning' %}<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        {% else %}<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>{% endif %}
+                    </div>
+                    <div class="ml-3">
+                        <p>{{ message }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Header with Status Badge -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 animate-slide-up">
+        <div class="flex flex-wrap items-center gap-3">
+            <h1 class="text-2xl font-bold text-white">{{ project.name }}</h1>
+            <span class="px-2 py-1 bg-green-900 bg-opacity-30 text-green-400 rounded-full text-xs border border-green-800 connection-status">
+                <svg class="inline-block h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"></path>
+                </svg>
+                Active
+            </span>
+            {% if project.description %}
+            <p class="w-full text-gray-400 mt-1">{{ project.description }}</p>
+            {% endif %}
+        </div>
+        <div class="mt-4 md:mt-0 flex flex-wrap gap-2">
+            <a href="{{ url_for('project.analytics', id=project.id) }}" class="inline-flex items-center px-3 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-md text-gray-200 transition-colors action-button" data-page-transition>
+                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                Analytics
+            </a>
+            <a href="{{ url_for('project.ml_insights', id=project.id) }}" class="inline-flex items-center px-3 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-md text-gray-200 transition-colors action-button" data-page-transition="ml-insights">
+                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                ML Insights
+            </a>
+            {% if url_for('project.connection_test', id=0)|replace('0', '') %}
+            <a href="{{ url_for('project.connection_test', id=project.id) }}" class="inline-flex items-center px-3 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-md text-gray-200 transition-colors action-button" data-page-transition>
+                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"></path>
+                </svg>
+                Connection Test
+            </a>
+            {% endif %}
+            <a href="{{ url_for('project.edit', id=project.id) }}" class="inline-flex items-center px-3 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-md text-gray-200 transition-colors action-button" data-page-transition>
+                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                Edit
+            </a>
+            <button type="button" class="inline-flex items-center px-3 py-2 bg-red-900 hover:bg-red-800 border border-red-800 rounded-md text-red-200 transition-colors action-button" data-modal="deleteProjectModal">
+                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                Delete
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mb-6 animate-slide-up" style="animation-delay: 50ms;">
+        <div class="bg-gray-800 rounded-lg border border-gray-700 p-4">
+            <div class="flex flex-wrap gap-3">
+                <a href="{{ url_for('project.connection_test', id=project.id) }}" class="px-3 py-2 rounded-md bg-gray-700 hover:bg-gray-600 text-white transition-colors flex items-center action-button">
+                    <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                    </svg>
+                    Test Connection
+                </a>
+                
+                <button id="copy-tracking-id-quick" class="px-3 py-2 rounded-md bg-gray-700 hover:bg-gray-600 text-white transition-colors flex items-center action-button">
+                    <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                    </svg>
+                    Copy Tracking ID
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+        <!-- Sidebar -->
+        <div class="lg:col-span-4 space-y-6 animate-slide-up">
+            <!-- Project Details Card -->
+            <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover-card">
+                <div class="px-4 py-3 border-b border-gray-700">
+                    <h5 class="font-medium text-white">Project Details</h5>
+                </div>
+                <div class="p-4 space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Tracking ID</label>
+                        <div class="flex">
+                            <input type="text" class="block w-full bg-gray-900 border border-gray-700 text-gray-300 px-3 py-2 rounded-l-md focus:outline-none focus:ring-1 focus:ring-primary-light" value="{{ project.tracking_id }}" readonly>
+                            <button class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-r-md border border-gray-700 transition-colors action-button" id="copyTrackingId">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Created</label>
+                        <div class="flex items-center">
+                            <svg class="h-4 w-4 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span class="text-gray-300">{{ project.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Type</label>
+                        <div class="flex items-center">
+                            <svg class="h-4 w-4 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                            <span class="text-gray-300">{{ project.type|default('Website') }}</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Template</label>
+                        <div class="flex items-center">
+                            <svg class="h-4 w-4 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+                            </svg>
+                            <span class="text-gray-300">{{ project.template|default('Basic Analytics') }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Analytics Overview Card -->
+            <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover-card">
+                <div class="px-4 py-3 border-b border-gray-700">
+                    <h5 class="font-medium text-white">Analytics Overview</h5>
+                </div>
+                <div class="p-4 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-300">Total Events</span>
+                        <div class="flex items-center">
+                            <span class="px-2 py-1 bg-indigo-900 text-indigo-200 rounded-md text-sm font-medium">{{ project.event_count }}</span>
+                            {% if project.event_count > 100 %}
+                            <span class="ml-2 text-green-400 text-xs">
+                                <svg class="h-3 w-3 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                                Active
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-300">Unique Users</span>
+                        <div class="flex items-center">
+                            <span class="px-2 py-1 bg-blue-900 text-blue-200 rounded-md text-sm font-medium">{{ project.active_users_count }}</span>
+                            {% if project.active_users_count > 10 %}
+                            <span class="ml-2 text-green-400 text-xs">
+                                <svg class="h-3 w-3 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                                Growing
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-300">Events Per User</span>
+                        <span class="px-2 py-1 bg-purple-900 text-purple-200 rounded-md text-sm font-medium">
+                            {{ (project.event_count / project.active_users_count)|round(1) if project.active_users_count > 0 else 0 }}
+                        </span>
+                    </div>
+                    <div class="pt-2 border-t border-gray-700">
+                        <a href="{{ url_for('project.analytics', id=project.id) }}" class="text-primary-light hover:text-primary-dark transition-colors text-sm flex items-center" data-page-transition>
+                            View detailed analytics
+                            <svg class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Server Status Card -->
+            <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover-card">
+                <div class="px-4 py-3 border-b border-gray-700">
+                    <h5 class="font-medium text-white">API Status</h5>
+                </div>
+                <div class="p-4">
+                    <div class="flex items-center justify-center mb-4">
+                        <div class="w-16 h-16 rounded-full bg-green-900 bg-opacity-20 flex items-center justify-center">
+                            <svg class="h-10 w-10 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-white font-medium">All Systems Operational</p>
+                        <p class="text-gray-400 text-sm mt-1">Events are being collected and processed normally</p>
+                        <div class="mt-3">
+                            <a href="{{ url_for('project.connection_test', id=project.id) }}" class="text-primary-light hover:text-primary-dark text-sm" data-page-transition>
+                                View API status details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="lg:col-span-8 animate-slide-up" style="animation-delay: 100ms;">
+            <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-700">
+                    <h5 class="font-medium text-white">Tracking Code</h5>
+                </div>
+                <div class="px-4 py-3 border-b border-gray-700">
+                    <div class="flex space-x-4">
+                        <button class="px-3 py-1 text-sm border-b-2 font-medium border-primary-light text-white" id="standardTab">Standard</button>
+                        <button class="px-3 py-1 text-sm border-b-2 border-transparent text-gray-400 hover:text-white transition-colors" id="simplifiedTab">Simplified</button>
+                    </div>
+                </div>
+                
+                <div class="relative">
+                    <!-- Standard Tracking Code -->
+                    <div id="standardCode" class="p-4">
+                        <div class="mb-3 flex justify-between items-center">
+                            <p class="text-gray-300">Add this code to your website or application to start tracking events:</p>
+                            <button class="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-md transition-colors" id="copyStandardCode">
+                                <svg class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                                Copy Code
+                            </button>
+                        </div>
+                        <div class="bg-gray-900 rounded-md p-4 border border-gray-700 code-block overflow-x-auto text-sm font-mono text-gray-300 max-h-80 overflow-y-auto" id="standardTrackingCode">{{ tracking_code }}</div>
+                    </div>
+                    
+                    <!-- Simplified Tracking Code (hidden by default) -->
+                    <div id="simplifiedCode" class="p-4 hidden">
+                        <div class="mb-3 flex justify-between items-center">
+                            <p class="text-gray-300">This is a more compact version with automatic page view tracking:</p>
+                            <button class="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-md transition-colors" id="copySimplifiedCode">
+                                <svg class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                                Copy Code
+                            </button>
+                        </div>
+                        <div class="bg-gray-900 rounded-md p-4 border border-gray-700 code-block overflow-x-auto text-sm font-mono text-gray-300 max-h-80 overflow-y-auto" id="simplifiedTrackingCode">{{ simplified_tracking_code }}</div>
+                    </div>
+                </div>
+                
+                <!-- Usage Examples -->
+                <div class="p-4 border-t border-gray-700">
+                    <h6 class="text-white font-medium mb-3">Usage Example:</h6>
+                    <div class="bg-gray-900 rounded-md p-4 border border-gray-700 code-block overflow-x-auto text-sm font-mono text-gray-300">
+<span class="text-gray-500">// Standard version</span>
+window.ProductAnalytics.track('page_view', {
+    page: window.location.pathname,
+    referrer: document.referrer
+});
+
+<span class="text-gray-500">// Simplified version</span>
+pa.track('button_click', {
+    id: 'signup-button',
+    category: 'conversion'
+});</div>
+                    
+                    <div class="mt-4 bg-blue-900 bg-opacity-20 border border-blue-800 rounded-md p-4 text-sm">
+                        <h6 class="text-blue-200 font-medium flex items-center mb-2">
+                            <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Mobile Compatibility
+                        </h6>
+                        <p class="text-blue-100">Our tracking code is fully compatible with mobile web applications. To test connection status, you can use the test endpoint:</p>
+                        <code class="mt-2 block px-3 py-2 bg-blue-900 bg-opacity-30 rounded text-blue-100">{{ request.host_url }}api/events/test</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    =
+</div>
+
+<!-- Delete Project Modal -->
+<div id="deleteProjectModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" id="delete-modal-backdrop"></div>
+        
+        <div class="relative bg-gray-800 rounded-lg max-w-md w-full mx-auto shadow-xl border border-gray-700 z-10 animate-fade-in">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-700">
+                <h5 class="text-lg font-medium text-white">Confirm Deletion</h5>
+                <button type="button" class="text-gray-400 hover:text-white" data-close-modal>
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6">
+                <p class="text-gray-300">Are you sure you want to delete project "{{ project.name }}"?</p>
+                <p class="mt-3 text-red-300 flex items-start">
+                    <svg class="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <span><strong>This action cannot be undone.</strong> All events and analytics data for this project will be permanently deleted.</span>
+                </p>
+            </div>
+            
+            <!-- Footer -->
+            <div class="border-t border-gray-700 px-4 py-3 flex justify-end space-x-3">
+                <button type="button" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors action-button" data-close-modal>
+                    Cancel
+                </button>
+                <form action="{{ url_for('project.delete', id=project.id) }}" method="post">
+                    <button type="submit" class="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded-md transition-colors action-button">
+                        Delete Project
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Page Transition System
+        const pageTransitionOverlay = document.getElementById('page-transition-overlay');
+        const loadingText = document.getElementById('loading-text');
+        
+        // Add page transition handling for all navigation links
+        document.querySelectorAll('[data-page-transition]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Show loading overlay
+                pageTransitionOverlay.classList.add('active');
+                
+                // Check if this is ML insights link for custom loading message
+                if (this.getAttribute('data-page-transition') === 'ml-insights') {
+                    loadingText.textContent = 'Loading ML Insights...';
+                } else {
+                    loadingText.textContent = 'Loading...';
+                }
+                
+                // Navigate after a short delay
+                setTimeout(() => {
+                    window.location.href = this.href;
+                }, 500);
+            });
+        });
+        
+        // Tab switching with improved UI
+        const standardTab = document.getElementById('standardTab');
+        const simplifiedTab = document.getElementById('simplifiedTab');
+        const npmTab = document.getElementById('npmTab');
+        const standardCode = document.getElementById('standardCode');
+        const simplifiedCode = document.getElementById('simplifiedCode');
+        const npmCode = document.getElementById('npmCode');
+        
+        if (standardTab && simplifiedTab && npmTab && standardCode && simplifiedCode && npmCode) {
+            // Active tab class management
+            function setActiveTab(tab, content) {
+                // Reset all tabs
+                [standardTab, simplifiedTab, npmTab].forEach(t => {
+                    t.classList.remove('active', 'text-white');
+                    t.classList.add('text-gray-400');
+                });
+                
+                // Reset all content
+                [standardCode, simplifiedCode, npmCode].forEach(c => {
+                    c.classList.add('hidden');
+                });
+                
+                // Set active tab
+                tab.classList.remove('text-gray-400');
+                tab.classList.add('active', 'text-white');
+                
+                // Show content
+                content.classList.remove('hidden');
+            }
+            
+            // Tab click handlers
+            standardTab.addEventListener('click', function() {
+                setActiveTab(standardTab, standardCode);
+            });
+            
+            simplifiedTab.addEventListener('click', function() {
+                setActiveTab(simplifiedTab, simplifiedCode);
+            });
+            
+            npmTab.addEventListener('click', function() {
+                setActiveTab(npmTab, npmCode);
+            });
+        }
+        
+        // Modal functionality with improved interactions
+        const deleteProjectModal = document.getElementById('deleteProjectModal');
+        const testPageModal = document.getElementById('testPageModal');
+        const modalTriggers = document.querySelectorAll('[data-modal]');
+        const deleteModalClosers = document.querySelectorAll('[data-close-modal]:not([data-close-modal="test"]), #delete-modal-backdrop');
+        const testModalClosers = document.querySelectorAll('[data-close-modal="test"], #test-modal-backdrop');
+        
+        // Test page triggers
+        const testPageBtns = document.querySelectorAll('#view-test-page-btn, #view-test-page-btn-empty');
+        testPageBtns.forEach(btn => {
+            if (btn) {
+                btn.addEventListener('click', function() {
+                    testPageModal.classList.remove('hidden');
+                    document.body.classList.add('overflow-hidden');
+                });
+            }
+        });
+        
+        // Delete modal triggers
+        modalTriggers.forEach(trigger => {
+            trigger.addEventListener('click', () => {
+                const modalId = trigger.getAttribute('data-modal');
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    document.body.classList.add('overflow-hidden');
+                }
+            });
+        });
+        
+        // Delete modal closers
+        deleteModalClosers.forEach(closer => {
+            closer.addEventListener('click', () => {
+                if (deleteProjectModal) {
+                    deleteProjectModal.classList.add('hidden');
+                    document.body.classList.remove('overflow-hidden');
+                }
+            });
+        });
+        
+        // Test modal closers
+        testModalClosers.forEach(closer => {
+            closer.addEventListener('click', () => {
+                if (testPageModal) {
+                    testPageModal.classList.add('hidden');
+                    document.body.classList.remove('overflow-hidden');
+                }
+            });
+        });
+        
+        // Copy functionality with improved feedback
+        function copyToClipboard(text, successMessage = 'Copied!') {
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    showCopyTooltip(successMessage);
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                    showCopyTooltip('Failed to copy', true);
+                });
+        }
+        
+        function showCopyTooltip(message, isError = false) {
+            // Remove any existing tooltips
+            const existingTooltips = document.querySelectorAll('.copy-tooltip');
+            existingTooltips.forEach(tooltip => tooltip.remove());
+            
+            // Create tooltip
+            const tooltip = document.createElement('div');
+            tooltip.className = `copy-tooltip fixed bottom-4 right-4 px-3 py-2 rounded-md shadow-lg z-50 ${isError ? 'bg-red-800 text-red-200' : 'bg-green-800 text-green-200'}`;
+            tooltip.textContent = message;
+            
+            // Add to DOM
+            document.body.appendChild(tooltip);
+            
+            // Remove after animation completes
+            setTimeout(() => {
+                tooltip.remove();
+            }, 2000);
+        }
+        
+        // Copy tracking ID
+        const copyTrackingIdBtn = document.getElementById('copyTrackingId');
+        const copyTrackingIdQuickBtn = document.getElementById('copy-tracking-id-quick');
+        [copyTrackingIdBtn, copyTrackingIdQuickBtn].forEach(btn => {
+            if (btn) {
+                btn.addEventListener('click', function() {
+                    copyToClipboard('{{ project.tracking_id }}', 'Tracking ID copied!');
+                });
+            }
+        });
+        
+        // Copy standard code
+        const copyStandardCodeBtn = document.getElementById('copyStandardCode');
+        const standardTrackingCode = document.getElementById('standardTrackingCode');
+        if (copyStandardCodeBtn && standardTrackingCode) {
+            copyStandardCodeBtn.addEventListener('click', function() {
+                copyToClipboard(standardTrackingCode.textContent, 'Standard tracking code copied!');
+            });
+        }
+        
+        // Copy simplified code
+        const copySimplifiedCodeBtn = document.getElementById('copySimplifiedCode');
+        const simplifiedTrackingCode = document.getElementById('simplifiedTrackingCode');
+        if (copySimplifiedCodeBtn && simplifiedTrackingCode) {
+            copySimplifiedCodeBtn.addEventListener('click', function() {
+                copyToClipboard(simplifiedTrackingCode.textContent, 'Simplified tracking code copied!');
+            });
+        }
+        
+        // Copy NPM code
+        const copyNpmCodeBtn = document.getElementById('copyNpmCode');
+        if (copyNpmCodeBtn) {
+            copyNpmCodeBtn.addEventListener('click', function() {
+                copyToClipboard('npm install product-analytics-js', 'NPM command copied!');
+            });
+        }
+        
+        // Copy test endpoint
+        const copyTestEndpointBtn = document.getElementById('copyTestEndpoint');
+        if (copyTestEndpointBtn) {
+            copyTestEndpointBtn.addEventListener('click', function() {
+                copyToClipboard('{{ request.host_url }}api/events/test', 'Test endpoint copied!');
+            });
+        }
+        
+        // Copy test URL
+        const copyTestUrlBtn = document.getElementById('copyTestUrl');
+        if (copyTestUrlBtn) {
+            copyTestUrlBtn.addEventListener('click', function() {
+                copyToClipboard('http://localhost:5001/test/{{ project.tracking_id }}', 'Test URL copied!');
+            });
+        }
+        
+        // Documentation button
+        const viewDocsBtn = document.getElementById('view-docs-btn');
+        if (viewDocsBtn) {
+            viewDocsBtn.addEventListener('click', function() {
+                window.open('/docs/analytics', '_blank');
+            });
+        }
+        
+        // Simulate live event updates
+        const eventsTable = document.getElementById('events-tbody');
+        if (eventsTable) {
+            // Mock event data for simulation
+            const eventTypes = ['page_view', 'button_click', 'form_submit', 'purchase', 'signup'];
+            const userIds = ['user_123', 'user_456', 'user_789', 'anon_abc', 'anon_def'];
+            
+            // Function to add a new random event
+            function addRandomEvent() {
+                // Only add if we have fewer than 20 rows to avoid cluttering
+                if (eventsTable.children.length < 20) {
+                    const eventType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+                    const userId = userIds[Math.floor(Math.random() * userIds.length)];
+                    const now = new Date();
+                    
+                    // Create new row
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-700 transition-colors event-row';
+                    tr.style.opacity = '0';
+                    
+                    // Add event name cell
+                    const eventCell = document.createElement('td');
+                    eventCell.className = 'px-4 py-3 whitespace-nowrap';
+                    eventCell.innerHTML = `<span class="px-2 py-1 bg-indigo-900 bg-opacity-70 text-indigo-200 rounded-md text-xs font-medium">${eventType}</span>`;
+                    tr.appendChild(eventCell);
+                    
+                    // Add user id cell
+                    const userCell = document.createElement('td');
+                    userCell.className = 'px-4 py-3 whitespace-nowrap text-gray-300';
+                    userCell.textContent = userId;
+                    tr.appendChild(userCell);
+                    
+                    // Add properties cell
+                    const propsCell = document.createElement('td');
+                    propsCell.className = 'px-4 py-3 text-gray-300';
+                    propsCell.innerHTML = `<span class="text-xs text-gray-400 font-mono">{page: "/home", referrer: "google.com"}</span>`;
+                    tr.appendChild(propsCell);
+                    
+                    // Add timestamp cell
+                    const timeCell = document.createElement('td');
+                    timeCell.className = 'px-4 py-3 whitespace-nowrap text-gray-300';
+                    timeCell.textContent = now.toISOString().replace('T', ' ').substr(0, 19);
+                    tr.appendChild(timeCell);
+                    
+                    // Add to table (at the top)
+                    eventsTable.insertBefore(tr, eventsTable.firstChild);
+                    
+                    // Animate in
+                    setTimeout(() => {
+                        tr.style.opacity = '1';
+                    }, 50);
+                    
+                    // Remove oldest event if we have 20 or more rows
+                    if (eventsTable.children.length > 10) {
+                        eventsTable.removeChild(eventsTable.lastChild);
+                    }
+                }
+            }
+            
+            // Add a random event every 8-15 seconds
+            setInterval(() => {
+                const delay = Math.floor(Math.random() * (15000 - 8000)) + 8000;
+                setTimeout(addRandomEvent, delay);
+            }, 10000);
+        }
+    });
+</script>
+{% endblock %}

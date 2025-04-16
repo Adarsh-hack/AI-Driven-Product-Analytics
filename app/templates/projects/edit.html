@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Breadcrumb -->
+    <nav class="py-4 animate-fade-in">
+        <ol class="flex text-sm">
+            <li class="flex items-center">
+                <a href="{{ url_for('project.list') }}" class="text-gray-400 hover:text-primary-light transition-colors">Projects</a>
+                <svg class="h-4 w-4 mx-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </li>
+            <li class="flex items-center">
+                <a href="{{ url_for('project.detail', id=project.id) }}" class="text-gray-400 hover:text-primary-light transition-colors">{{ project.name }}</a>
+                <svg class="h-4 w-4 mx-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </li>
+            <li class="text-gray-300">Edit</li>
+        </ol>
+    </nav>
+
+    <!-- Form Section -->
+    <div class="flex justify-center animate-slide-up">
+        <div class="w-full max-w-2xl">
+            <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden shadow-lg">
+                <div class="px-6 py-4 border-b border-gray-700">
+                    <h2 class="text-xl font-semibold text-white">Edit Project</h2>
+                </div>
+                <div class="p-6">
+                    <form method="post" action="{{ url_for('project.edit', id=project.id) }}" class="space-y-6">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Name Field -->
+                        <div>
+                            <label for="{{ form.name.id }}" class="block text-sm font-medium text-gray-300 mb-1">{{ form.name.label.text }}</label>
+                            {{ form.name(class="mt-1 block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-300 focus:outline-none focus:ring-primary-light focus:border-primary-light") }}
+                            {% for error in form.name.errors %}
+                            <div class="mt-1 text-sm text-red-400">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Description Field -->
+                        <div>
+                            <label for="{{ form.description.id }}" class="block text-sm font-medium text-gray-300 mb-1">{{ form.description.label.text }}</label>
+                            {{ form.description(class="mt-1 block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-300 focus:outline-none focus:ring-primary-light focus:border-primary-light", rows="3") }}
+                            {% for error in form.description.errors %}
+                            <div class="mt-1 text-sm text-red-400">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Buttons -->
+                        <div class="flex justify-between pt-4">
+                            <a href="{{ url_for('project.detail', id=project.id) }}" class="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-md text-gray-200 transition-colors">
+                                <i class="fas fa-arrow-left mr-2"></i> Cancel
+                            </a>
+                            {{ form.submit(class="inline-flex items-center px-4 py-2 bg-primary hover:bg-primary-dark border border-primary-dark rounded-md text-white transition-colors shadow-sm") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

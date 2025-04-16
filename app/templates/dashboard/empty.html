@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Dashboard Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 animate-slide-up">
+        <div>
+            <h1 class="text-2xl font-bold text-white">Dashboard</h1>
+            <p class="text-gray-400 mt-1">Welcome, {{ current_user.username }}! Let's get started with your analytics journey.</p>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="mb-6 p-4 rounded-md bg-opacity-20 animate-fade-in
+                {% if category == 'success' %} bg-green-700 text-green-200 border border-green-600
+                {% elif category == 'danger' %} bg-red-700 text-red-200 border border-red-600
+                {% elif category == 'warning' %} bg-yellow-700 text-yellow-200 border border-yellow-600
+                {% else %} bg-blue-700 text-blue-200 border border-blue-600
+                {% endif %}">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        {% if category == 'success' %}<i class="fas fa-check-circle"></i>
+                        {% elif category == 'danger' %}<i class="fas fa-exclamation-circle"></i>
+                        {% elif category == 'warning' %}<i class="fas fa-exclamation-triangle"></i>
+                        {% else %}<i class="fas fa-info-circle"></i>{% endif %}
+                    </div>
+                    <div class="ml-3">
+                        <p>{{ message }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Empty State -->
+    <div class="bg-dark-lighter rounded-lg shadow-md overflow-hidden border border-gray-700 animate-fade-in">
+        <div class="p-10 text-center">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-indigo-900 bg-opacity-30 text-primary-light mb-6">
+                <i class="fas fa-chart-line text-4xl animate-pulse-slow"></i>
+            </div>
+            <h2 class="text-xl font-bold text-white mb-3">Welcome to Product Analytics!</h2>
+            <p class="text-gray-400 max-w-lg mx-auto mb-8">Start tracking user behavior and gather insights by creating your first project. It only takes a minute to get set up.</p>
+            <a href="{{ url_for('project.create') }}" class="inline-flex items-center px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-md shadow transition-all transform hover:scale-105">
+                <i class="fas fa-plus mr-2"></i> Create Your First Project
+            </a>
+        </div>
+    </div>
+
+    <!-- Getting Started Guide -->
+    <div class="mt-8 animate-slide-up" style="animation-delay: 200ms;">
+        <div class="bg-dark-lighter rounded-lg shadow-md overflow-hidden border border-gray-700">
+            <div class="px-6 py-4 border-b border-gray-700">
+                <h5 class="text-lg font-semibold text-white">Getting Started Guide</h5>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Step 1 -->
+                    <div class="transform transition-all hover:translate-y-[-5px] bg-dark-lightest p-6 rounded-lg">
+                        <div class="flex flex-col items-center text-center">
+                            <div class="flex items-center justify-center w-14 h-14 rounded-full bg-indigo-900 bg-opacity-40 text-primary-light mb-4">
+                                <span class="text-xl font-bold">1</span>
+                            </div>
+                            <h6 class="text-white font-medium text-lg mb-2">Create a Project</h6>
+                            <p class="text-gray-400 text-sm">Start by creating a project for each website or application you want to track.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2 -->
+                    <div class="transform transition-all hover:translate-y-[-5px] bg-dark-lightest p-6 rounded-lg">
+                        <div class="flex flex-col items-center text-center">
+                            <div class="flex items-center justify-center w-14 h-14 rounded-full bg-indigo-900 bg-opacity-40 text-primary-light mb-4">
+                                <span class="text-xl font-bold">2</span>
+                            </div>
+                            <h6 class="text-white font-medium text-lg mb-2">Add Tracking Code</h6>
+                            <p class="text-gray-400 text-sm">Copy the provided JavaScript snippet and add it to your website or application.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 3 -->
+                    <div class="transform transition-all hover:translate-y-[-5px] bg-dark-lightest p-6 rounded-lg">
+                        <div class="flex flex-col items-center text-center">
+                            <div class="flex items-center justify-center w-14 h-14 rounded-full bg-indigo-900 bg-opacity-40 text-primary-light mb-4">
+                                <span class="text-xl font-bold">3</span>
+                            </div>
+                            <h6 class="text-white font-medium text-lg mb-2">View Analytics</h6>
+                            <p class="text-gray-400 text-sm">Watch real-time data flow in and gain valuable insights into your users' behavior.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Preview -->
+    <div class="mt-8 animate-slide-up" style="animation-delay: 300ms;">
+        <div class="bg-dark-lighter rounded-lg shadow-md overflow-hidden border border-gray-700">
+            <div class="px-6 py-4 border-b border-gray-700">
+                <h5 class="text-lg font-semibold text-white">Features You'll Unlock</h5>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Feature 1 -->
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-900 bg-opacity-40 text-blue-400">
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h6 class="text-white font-medium">Real-time Analytics</h6>
+                            <p class="text-gray-400 mt-1 text-sm">Track page views, events, and user activity in real-time with interactive dashboards.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Feature 2 -->
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-900 bg-opacity-40 text-green-400">
+                                <i class="fas fa-users"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h6 class="text-white font-medium">User Behavior</h6>
+                            <p class="text-gray-400 mt-1 text-sm">Understand how users interact with your products through detailed behavior flows.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Feature 3 -->
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-900 bg-opacity-40 text-yellow-400">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h6 class="text-white font-medium">Conversion Tracking</h6>
+                            <p class="text-gray-400 mt-1 text-sm">Set up goals and track conversion rates to optimize your business outcomes.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Feature 4 -->
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-red-900 bg-opacity-40 text-red-400">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h6 class="text-white font-medium">AI Insights</h6>
+                            <p class="text-gray-400 mt-1 text-sm">Get AI-powered recommendations to improve performance and user engagement.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

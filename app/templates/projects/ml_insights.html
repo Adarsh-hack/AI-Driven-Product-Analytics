@@ -1,0 +1,538 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .insight-card {
+        transition: transform 0.2s;
+        height: 100%;
+    }
+    .insight-card:hover {
+        transform: translateY(-5px);
+    }
+    .confidence-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+    .priority-high {
+        border-left: 4px solid #dc3545;
+    }
+    .priority-medium {
+        border-left: 4px solid #ffc107;
+    }
+    .priority-low {
+        border-left: 4px solid #28a745;
+    }
+    .impact-high {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+    .impact-medium {
+        background-color: rgba(255, 193, 7, 0.1);
+    }
+    .impact-low {
+        background-color: rgba(40, 167, 69, 0.1);
+    }
+    .segment-chart {
+        width: 100%;
+        height: 300px;
+    }
+    .api-status {
+        font-size: 0.9rem;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+    .api-status.available {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .api-status.unavailable {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    .api-status.mock {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Breadcrumb -->
+    <nav class="py-4 animate-fade-in">
+        <ol class="flex text-sm">
+            <li class="flex items-center">
+                <a href="{{ url_for('project.list') }}" class="text-gray-400 hover:text-primary-light transition-colors">Projects</a>
+                <svg class="h-4 w-4 mx-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </li>
+            <li class="flex items-center">
+                <a href="{{ url_for('project.detail', id=project.id) }}" class="text-gray-400 hover:text-primary-light transition-colors">{{ project.name }}</a>
+                <svg class="h-4 w-4 mx-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </li>
+            <li class="text-gray-300">ML Insights</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6 animate-fade-in">
+        <div>
+            <h1 class="text-3xl font-bold text-white">AI-Powered Insights</h1>
+            <p class="text-gray-400 mt-1">Advanced analysis and recommendations powered by DeepSeek AI</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            {% if api_available %}
+                {% if using_mock %}
+                <span class="api-status mock px-2 py-1 rounded-md bg-yellow-800 text-yellow-200">
+                    <i class="fas fa-database mr-1"></i> Using Sample Data
+                </span>
+                <a href="{{ url_for('project.ml_insights', id=project.id) }}" class="inline-flex items-center px-4 py-2 bg-primary hover:bg-primary-dark border border-primary-dark rounded-md text-white transition-colors shadow-sm">
+                    <i class="fas fa-cpu mr-2"></i> Use Real Data
+                </a>
+                {% else %}
+                <span class="api-status available px-2 py-1 rounded-md bg-green-800 text-green-200">
+                    <i class="fas fa-check-circle mr-1"></i> Live API Connected
+                </span>
+                <a href="{{ url_for('project.ml_insights', id=project.id, mode='mock') }}" class="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-md text-gray-200 transition-colors">
+                    <i class="fas fa-database mr-2"></i> View Sample Data
+                </a>
+                {% endif %}
+            {% else %}
+                <span class="api-status unavailable px-2 py-1 rounded-md bg-red-800 text-red-200">
+                    <i class="fas fa-exclamation-triangle mr-1"></i> DeepSeek API Unavailable
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if 'error' in behavior_insights %}
+    <div class="p-4 rounded-md bg-yellow-800 text-yellow-200 mb-6 animate-fade-in">
+        <h2 class="text-lg font-semibold"><i class="fas fa-exclamation-triangle mr-2"></i> API Error</h2>
+        <p>{{ behavior_insights.message }}</p>
+        {% if behavior_insights.raw_response %}
+        <details class="mt-2">
+            <summary class="cursor-pointer text-sm text-gray-400">API Response Details</summary>
+            <pre class="mt-2 p-2 bg-gray-900 rounded-md text-gray-300">{{ behavior_insights.raw_response }}</pre>
+        </details>
+        {% endif %}
+    </div>
+    {% else %}
+
+    <!-- User Behavior Insights Section -->
+    <div class="bg-gray-800 rounded-lg border border-gray-700 shadow-lg mb-6 animate-slide-up">
+        <div class="p-6">
+            <h2 class="text-xl font-semibold text-white mb-4">User Behavior Insights</h2>
+            
+            <!-- Key Insights -->
+            <h3 class="text-lg font-medium text-white mb-3">Key Insights</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                {% for insight in behavior_insights.insights %}
+                <div class="bg-gray-900 rounded-lg p-4 relative insight-card">
+                    <h4 class="text-white font-medium">{{ insight.title }}</h4>
+                    <p class="text-gray-400 text-sm mt-1">{{ insight.description }}</p>
+                    {% if insight.confidence %}
+                    <span class="confidence-badge px-2 py-1 rounded-full bg-primary text-white text-xs">
+                        {{ (insight.confidence * 100)|int }}% Confidence
+                    </span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Behavior Patterns -->
+            <h3 class="text-lg font-medium text-white mb-3">Identified User Patterns</h3>
+            <div class="overflow-x-auto mb-6">
+                <table class="w-full text-sm text-gray-300">
+                    <thead class="bg-gray-700">
+                        <tr>
+                            <th class="px-4 py-2 text-left">Pattern</th>
+                            <th class="px-4 py-2 text-left">Description</th>
+                            <th class="px-4 py-2 text-left">Business Significance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pattern in behavior_insights.patterns %}
+                        <tr class="border-b border-gray-700">
+                            <td class="px-4 py-2"><strong>{{ pattern.name }}</strong></td>
+                            <td class="px-4 py-2">{{ pattern.description }}</td>
+                            <td class="px-4 py-2">{{ pattern.significance }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- User Segments -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <h3 class="text-lg font-medium text-white mb-3">User Segments</h3>
+                    <div class="segment-chart" id="segmentChart"></div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium text-white mb-3">Segment Details</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-gray-300">
+                            <thead class="bg-gray-700">
+                                <tr>
+                                    <th class="px-4 py-2 text-left">Segment</th>
+                                    <th class="px-4 py-2 text-left">Characteristics</th>
+                                    <th class="px-4 py-2 text-left">Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for segment in behavior_insights.user_segments %}
+                                <tr class="border-b border-gray-700">
+                                    <td class="px-4 py-2"><strong>{{ segment.name }}</strong></td>
+                                    <td class="px-4 py-2">{{ segment.characteristics }}</td>
+                                    <td class="px-4 py-2">{{ segment.percentage }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            <h3 class="text-lg font-medium text-white mb-3">Behavior-Based Recommendations</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for recommendation in behavior_insights.recommendations %}
+                <div class="bg-gray-900 rounded-lg p-4 {{ 'priority-high' if recommendation.priority == 'high' else 'priority-medium' if recommendation.priority == 'medium' else 'priority-low' }}">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-white font-medium">{{ recommendation.title }}</span>
+                        <span class="px-2 py-1 rounded-full text-xs {{ 'bg-red-500' if recommendation.priority == 'high' else 'bg-yellow-500' if recommendation.priority == 'medium' else 'bg-green-500' }} text-white">
+                            {{ recommendation.priority|capitalize }} Priority
+                        </span>
+                    </div>
+                    <p class="text-gray-400 text-sm">{{ recommendation.description }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Improvement Recommendations Section -->
+    <div class="bg-gray-800 rounded-lg border border-gray-700 shadow-lg mb-6 animate-slide-up" style="animation-delay: 100ms;">
+        <div class="p-6">
+            <h2 class="text-xl font-semibold text-white mb-4">Product Improvement Recommendations</h2>
+            
+            <!-- Key Findings -->
+            <h3 class="text-lg font-medium text-white mb-3">Key Findings</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                {% for finding in product_recommendations.key_findings %}
+                <div class="bg-gray-900 rounded-lg p-4 insight-card {{ 'impact-high' if finding.impact == 'high' else 'impact-medium' if finding.impact == 'medium' else 'impact-low' }}">
+                    <h4 class="text-white font-medium">{{ finding.title }}</h4>
+                    <p class="text-gray-400 text-sm mt-1">{{ finding.description }}</p>
+                    <span class="mt-2 inline-block px-2 py-1 rounded-full text-xs {{ 'bg-red-500' if finding.impact == 'high' else 'bg-yellow-500' if finding.impact == 'medium' else 'bg-green-500' }} text-white">
+                        {{ finding.impact|capitalize }} Impact
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Improvement Recommendations -->
+            <h3 class="text-lg font-medium text-white mb-3">Recommended Improvements</h3>
+            <div class="overflow-x-auto mb-6">
+                <table class="w-full text-sm text-gray-300">
+                    <thead class="bg-gray-700">
+                        <tr>
+                            <th class="px-4 py-2 text-left">Recommendation</th>
+                            <th class="px-4 py-2 text-left">Description</th>
+                            <th class="px-4 py-2 text-left">Expected Impact</th>
+                            <th class="px-4 py-2 text-left">Effort</th>
+                            <th class="px-4 py-2 text-left">Priority</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rec in product_recommendations.improvement_recommendations %}
+                        <tr class="border-b border-gray-700">
+                            <td class="px-4 py-2"><strong>{{ rec.title }}</strong></td>
+                            <td class="px-4 py-2">{{ rec.description }}</td>
+                            <td class="px-4 py-2">{{ rec.expected_impact }}</td>
+                            <td class="px-4 py-2">
+                                <span class="px-2 py-1 rounded-full text-xs {{ 'bg-red-500' if rec.effort == 'high' else 'bg-yellow-500' if rec.effort == 'medium' else 'bg-green-500' }} text-white">
+                                    {{ rec.effort|capitalize }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-2">
+                                <span class="px-2 py-1 rounded-full text-xs {{ 'bg-red-500' if rec.priority == 'high' else 'bg-yellow-500' if rec.priority == 'medium' else 'bg-green-500' }} text-white">
+                                    {{ rec.priority|capitalize }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Feature Ideas and Engagement Strategies -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-medium text-white mb-3">Feature Ideas</h3>
+                    <div class="space-y-4">
+                        {% for feature in product_recommendations.feature_ideas %}
+                        <div class="bg-gray-900 rounded-lg p-4">
+                            <h4 class="text-white font-medium">{{ feature.name }}</h4>
+                            <p class="text-gray-400 text-sm mt-1">{{ feature.description }}</p>
+                            <p class="text-gray-500 text-xs mt-2">Rationale: {{ feature.rationale }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium text-white mb-3">Engagement Strategies</h3>
+                    <div class="space-y-4">
+                        {% for strategy in product_recommendations.engagement_strategies %}
+                        <div class="bg-gray-900 rounded-lg p-4">
+                            <h4 class="text-white font-medium">{{ strategy.name }}</h4>
+                            <p class="text-gray-400 text-sm mt-1">{{ strategy.description }}</p>
+                            <p class="text-gray-500 text-xs mt-2">Target: {{ strategy.target_segment }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Action Plan Card -->
+    <div class="bg-gray-800 rounded-lg border border-gray-700 shadow-lg mb-6 animate-slide-up" style="animation-delay: 200ms;">
+        <div class="p-6">
+            <h2 class="text-xl font-semibold text-white mb-4">Create Action Plan</h2>
+            <p class="text-gray-300 mb-4">Ready to implement these insights? Create an action plan based on our AI-powered recommendations.</p>
+            <button class="inline-flex items-center px-4 py-2 bg-primary hover:bg-primary-dark border border-primary-dark rounded-md text-white transition-colors shadow-sm" data-bs-toggle="modal" data-bs-target="#actionPlanModal">
+                <i class="fas fa-list-check mr-2"></i> Generate Action Plan
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Action Plan Modal -->
+<div class="modal fade" id="actionPlanModal" tabindex="-1" aria-labelledby="actionPlanModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="actionPlanModalLabel">Action Plan Generator</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Select Time Frame</label>
+                    <select class="form-select" id="timeFrame">
+                        <option value="2weeks">Next 2 Weeks</option>
+                        <option value="1month">Next Month</option>
+                        <option value="3months">Next Quarter</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Priority Focus</label>
+                    <select class="form-select" id="priorityFocus">
+                        <option value="all">All Recommendations</option>
+                        <option value="high">High Priority Only</option>
+                        <option value="quick">Quick Wins (Low Effort, High Impact)</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Team Resources</label>
+                    <select class="form-select" id="teamResources">
+                        <option value="limited">Limited (1-2 people)</option>
+                        <option value="moderate">Moderate (3-5 people)</option>
+                        <option value="full">Full Team</option>
+                    </select>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> This will generate a step-by-step action plan based on the insights and your selections.
+                </div>
+                
+                <div id="actionPlanResult" class="d-none">
+                    <h5>Your Action Plan</h5>
+                    <div class="action-plan-content p-3 border rounded bg-light">
+                        <ol id="actionPlanSteps">
+                            <!-- Action plan steps will be generated here -->
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="generatePlanBtn">Generate Plan</button>
+                <button type="button" class="btn btn-success d-none" id="downloadPlanBtn">
+                    <i class="bi bi-download"></i> Download Plan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.plot.ly/plotly-2.18.0.min.js"></script>
+<<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // User Segments Chart
+        {% if behavior_insights.user_segments %}
+        try {
+            var segmentLabels = [];
+            var segmentValues = [];
+            var segmentColors = ['#4361ee', '#3cb44b', '#4cc9f0', '#aaaaaa', '#ff6b6b', '#ffe66d'];
+            
+            {% for segment in behavior_insights.user_segments %}
+            segmentLabels.push("{{ segment.name }}");
+            segmentValues.push({{ segment.percentage }});
+            {% endfor %}
+            
+            var segmentData = [{
+                values: segmentValues,
+                labels: segmentLabels,
+                type: 'pie',
+                textinfo: 'label+percent',
+                hoverinfo: 'label+percent+value',
+                marker: {
+                    colors: segmentColors.slice(0, segmentLabels.length)
+                }
+            }];
+            
+            var layout = {
+                margin: {t: 10, r: 10, b: 10, l: 10},
+                showlegend: false
+            };
+            
+            Plotly.newPlot('segmentChart', segmentData, layout, {responsive: true});
+        } catch (error) {
+            console.error('Error rendering segment chart:', error);
+            document.getElementById('segmentChart').innerHTML = 
+                '<div class="alert alert-warning">Unable to render chart. Please try again later.</div>';
+        }
+        {% endif %}
+        
+        // Action Plan Generator
+        document.getElementById('generatePlanBtn').addEventListener('click', function() {
+            const timeFrame = document.getElementById('timeFrame').value;
+            const priorityFocus = document.getElementById('priorityFocus').value;
+            const teamResources = document.getElementById('teamResources').value;
+            
+            // Show loading state
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...';
+            this.disabled = true;
+            
+            // Simulate API call with timeout
+            setTimeout(() => {
+                generateActionPlan(timeFrame, priorityFocus, teamResources);
+                this.innerHTML = 'Generate Plan';
+                this.disabled = false;
+                document.getElementById('downloadPlanBtn').classList.remove('d-none');
+            }, 1500);
+        });
+        
+        document.getElementById('downloadPlanBtn').addEventListener('click', function() {
+            // Create plan text content
+            let planText = "ACTION PLAN FOR {{ project.name }}\n\n";
+            planText += "Generated on " + new Date().toLocaleDateString() + "\n\n";
+            
+            // Add steps
+            const steps = document.getElementById('actionPlanSteps').children;
+            for (let i = 0; i < steps.length; i++) {
+                planText += (i+1) + ". " + steps[i].innerText + "\n\n";
+            }
+            
+            // Create download link
+            const blob = new Blob([planText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'action_plan_{{ project.name.replace(" ", "_") }}.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+        
+        function generateActionPlan(timeFrame, priorityFocus, teamResources) {
+            // In a real implementation, this would call the DeepSeek API
+            // For now, we'll generate a simple plan based on the selected options
+            
+            const actionPlanSteps = document.getElementById('actionPlanSteps');
+            actionPlanSteps.innerHTML = '';
+            
+            // Get recommendations from the page
+            const recommendations = [];
+            {% if behavior_insights.recommendations %}
+            {% for rec in behavior_insights.recommendations %}
+            recommendations.push({
+                title: "{{ rec.title }}",
+                description: "{{ rec.description }}",
+                priority: "{{ rec.priority }}"
+            });
+            {% endfor %}
+            {% endif %}
+            
+            {% if product_recommendations.improvement_recommendations %}
+            {% for rec in product_recommendations.improvement_recommendations %}
+            recommendations.push({
+                title: "{{ rec.title }}",
+                description: "{{ rec.description }}",
+                priority: "{{ rec.priority }}",
+                effort: "{{ rec.effort }}"
+            });
+            {% endfor %}
+            {% endif %}
+            
+            // Filter recommendations based on selected options
+            let filteredRecs = [...recommendations];
+            
+            if (priorityFocus === 'high') {
+                filteredRecs = filteredRecs.filter(rec => rec.priority === 'high');
+            } else if (priorityFocus === 'quick') {
+                filteredRecs = filteredRecs.filter(rec => 
+                    (rec.priority === 'high' || rec.priority === 'medium') && 
+                    (rec.effort === 'low' || !rec.effort)
+                );
+            }
+            
+            // Limit based on team resources
+            let maxRecs = 10;
+            if (teamResources === 'limited') {
+                maxRecs = 3;
+            } else if (teamResources === 'moderate') {
+                maxRecs = 5;
+            }
+            
+            filteredRecs = filteredRecs.slice(0, maxRecs);
+            
+            // Add setup steps
+            const li1 = document.createElement('li');
+            li1.innerHTML = '<strong>Team Alignment:</strong> Schedule a kickoff meeting to share insights and align on priorities.';
+            actionPlanSteps.appendChild(li1);
+            
+            const li2 = document.createElement('li');
+            li2.innerHTML = '<strong>Baseline Metrics:</strong> Document current performance metrics as baseline for measuring improvement.';
+            actionPlanSteps.appendChild(li2);
+            
+            // Add recommendation steps
+            filteredRecs.forEach(rec => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${rec.title}:</strong> ${rec.description}`;
+                actionPlanSteps.appendChild(li);
+            });
+            
+            // Add follow-up steps
+            const li3 = document.createElement('li');
+            li3.innerHTML = '<strong>Progress Review:</strong> Schedule bi-weekly review meetings to track implementation progress.';
+            actionPlanSteps.appendChild(li3);
+            
+            const li4 = document.createElement('li');
+            li4.innerHTML = '<strong>Impact Analysis:</strong> After implementation, analyze metrics to measure impact of changes.';
+            actionPlanSteps.appendChild(li4);
+            
+            // Show the result
+            document.getElementById('actionPlanResult').classList.remove('d-none');
+        }
+    });
+</script>>
+{% endblock %}

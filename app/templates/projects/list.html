@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6 animate-fade-in">
+        <div>
+            <h1 class="text-3xl font-bold text-white">My Projects</h1>
+            <p class="text-gray-400 mt-1">Track analytics for your websites and applications</p>
+        </div>
+        <a href="{{ url_for('project.create') }}" class="inline-flex items-center px-4 py-2 bg-primary hover:bg-primary-dark border border-primary-dark rounded-md text-white transition-colors shadow-sm">
+            <i class="fas fa-plus mr-2"></i> New Project
+        </a>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="mb-4 p-4 rounded-md {% if category == 'success' %}bg-green-800 text-green-200{% elif category == 'error' %}bg-red-800 text-red-200{% else %}bg-blue-800 text-blue-200{% endif %} animate-fade-in">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Project List -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% if projects %}
+            {% for project in projects %}
+            <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden shadow-lg animate-slide-up">
+                <div class="p-6">
+                    <h3 class="text-xl font-semibold text-white mb-2">{{ project.name }}</h3>
+                    {% if project.description %}
+                    <p class="text-gray-400 text-sm mb-4">{{ project.description|truncate(100) }}</p>
+                    {% endif %}
+                    <div class="space-y-2 text-sm text-gray-300">
+                        <div class="flex justify-between">
+                            <span>Event count:</span>
+                            <span class="font-medium">{{ project.event_count }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Created:</span>
+                            <span>{{ project.created_at.strftime('%Y-%m-%d') }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-900 flex justify-between">
+                    <a href="{{ url_for('project.detail', id=project.id) }}" class="text-primary-light hover:text-primary transition-colors">
+                        View Details <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                    <a href="{{ url_for('project.edit', id=project.id) }}" class="text-gray-400 hover:text-gray-200 transition-colors">
+                        <i class="fas fa-edit mr-1"></i> Edit
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-span-full">
+                <div class="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center animate-fade-in">
+                    <i class="fas fa-folder-open text-5xl text-gray-600 mb-4"></i>
+                    <h3 class="text-xl font-semibold text-white mb-2">No projects yet</h3>
+                    <p class="text-gray-400 mb-4">Get started by creating your first project</p>
+                    <a href="{{ url_for('project.create') }}" class="inline-flex items-center px-4 py-2 bg-primary hover:bg-primary-dark border border-primary-dark rounded-md text-white transition-colors shadow-sm">
+                        <i class="fas fa-plus mr-2"></i> Create Project
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

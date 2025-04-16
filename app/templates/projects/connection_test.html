@@ -1,0 +1,681 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+  /* Animation for the loader */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .animate-pulse-slow {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  /* Test status indicators */
+  .test-success {
+    background-color: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+  .test-error {
+    background-color: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+  .test-pending {
+    background-color: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+  
+  /* Line drawing animation for connection path */
+  @keyframes drawLine {
+    0% { stroke-dashoffset: 1000; }
+    100% { stroke-dashoffset: 0; }
+  }
+  .path-line {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: drawLine 1.5s ease-in-out forwards;
+  }
+  
+  /* Animation for the data packets */
+  @keyframes movePacket {
+    0% { transform: translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateX(var(--packet-distance, 200px)); opacity: 0; }
+  }
+  .data-packet {
+    --packet-distance: 200px;
+    animation: movePacket 1.5s ease-in-out infinite;
+  }
+  
+  /* Fade-in animation for test results */
+  @keyframes fadeSlideUp {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-slide-up {
+    animation: fadeSlideUp 0.3s ease-out forwards;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+  <!-- Breadcrumb -->
+  <nav class="py-4 animate-fade-in">
+    <ol class="flex text-sm">
+      <li class="flex items-center">
+        <a href="{{ url_for('project.list') }}" class="text-gray-400 hover:text-primary-light transition-colors">Projects</a>
+        <svg class="h-4 w-4 mx-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </li>
+      <li class="flex items-center">
+        <a href="{{ url_for('project.detail', id=project.id) }}" class="text-gray-400 hover:text-primary-light transition-colors">{{ project.name }}</a>
+        <svg class="h-4 w-4 mx-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </li>
+      <li class="text-gray-300">Connection Test</li>
+    </ol>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 animate-slide-up">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Connection Tester</h1>
+      <p class="text-gray-400 mt-1">Verify that your tracking implementation is working correctly</p>
+    </div>
+    <div class="mt-4 md:mt-0 space-x-2">
+      <a href="{{ url_for('project.detail', id=project.id) }}" class="inline-flex items-center px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-all">
+        <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        Back to Project
+      </a>
+    </div>
+  </div>
+
+  <!-- Connection Status Card -->
+  <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden shadow-lg mb-6 animate-slide-up">
+    <div class="px-6 py-4 border-b border-gray-700">
+      <h2 class="text-lg font-semibold text-white">Connection Status</h2>
+    </div>
+    <div class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Connection Visualization -->
+        <div class="relative h-64 bg-gray-900 rounded-lg p-4">
+          <!-- Client Side -->
+          <div class="absolute left-6 top-1/2 transform -translate-y-1/2 flex flex-col items-center">
+            <div class="w-20 h-20 bg-gray-800 rounded-lg flex items-center justify-center mb-2 shadow-lg">
+              <svg class="h-12 w-12 text-primary-light" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+            <span class="text-gray-300 text-sm">Your Website</span>
+          </div>
+          
+          <!-- Server Side -->
+          <div class="absolute right-6 top-1/2 transform -translate-y-1/2 flex flex-col items-center">
+            <div class="w-20 h-20 bg-gray-800 rounded-lg flex items-center justify-center mb-2 shadow-lg">
+              <svg class="h-12 w-12 text-primary-light" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"></path>
+              </svg>
+            </div>
+            <span class="text-gray-300 text-sm">Analytics API</span>
+          </div>
+          
+          <!-- Connection Line -->
+          <svg class="absolute inset-0 w-full h-full" viewBox="0 0 400 150" preserveAspectRatio="none">
+            <!-- Status-based connection paths -->
+            <path id="connection-path" class="path-line" stroke="#6366f1" stroke-width="2" stroke-dasharray="5,5" fill="none" d="M80 75 C150 25, 250 125, 320 75"></path>
+            
+            <!-- Data packets moving along the path -->
+            <circle id="data-packet-1" class="data-packet" r="4" fill="#6366f1" style="--packet-distance: 240px">
+              <animateMotion dur="2s" repeatCount="indefinite" path="M80 75 C150 25, 250 125, 320 75"></animateMotion>
+            </circle>
+            <circle id="data-packet-2" class="data-packet" r="4" fill="#6366f1" style="--packet-distance: 240px">
+              <animateMotion dur="2s" begin="0.7s" repeatCount="indefinite" path="M80 75 C150 25, 250 125, 320 75"></animateMotion>
+            </circle>
+          </svg>
+          
+          <!-- Connection Status Indicator -->
+          <div id="connection-status" class="absolute bottom-4 inset-x-0 text-center">
+            <span id="status-badge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-900 text-yellow-200">
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-yellow-200" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Checking connection...
+            </span>
+          </div>
+        </div>
+        
+        <!-- Connection Details -->
+        <div class="bg-gray-900 rounded-lg p-4">
+          <h3 class="text-white font-medium mb-3">Connection Details</h3>
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-gray-400">Project ID:</span>
+              <span class="text-gray-300 font-mono text-sm">{{ project.tracking_id }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-400">API Endpoint:</span>
+              <span class="text-gray-300 font-mono text-sm">{{ request.host_url }}api/events</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-400">Test Endpoint:</span>
+              <span class="text-gray-300 font-mono text-sm">{{ request.host_url }}api/events/test</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-400">Status:</span>
+              <span id="api-status" class="text-gray-300">Checking...</span>
+            </div>
+            
+            <div class="border-t border-gray-700 my-3 pt-3">
+              <div class="flex justify-between">
+                <button id="test-connection-btn" class="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded-md transition-colors">
+                  <svg class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                  </svg>
+                  Test Connection
+                </button>
+                <button id="send-test-event-btn" class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors">
+                  <svg class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                  </svg>
+                  Send Test Event
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Results Section -->
+  <div id="test-results-container" class="hidden">
+    <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden shadow-lg mb-6 animate-fade-slide-up">
+      <div class="px-6 py-4 border-b border-gray-700">
+        <h2 class="text-lg font-semibold text-white">Test Results</h2>
+      </div>
+      <div class="p-6">
+        <div id="test-results-content" class="bg-gray-900 rounded-lg p-4 font-mono text-sm overflow-x-auto mb-4">
+          <!-- Test results will be dynamically inserted here -->
+        </div>
+        <div id="test-verdict" class="mt-4">
+          <!-- Test verdict will be dynamically inserted here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Implementation Steps Card -->
+  <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden shadow-lg mb-6 animate-slide-up" style="animation-delay: 100ms;">
+    <div class="px-6 py-4 border-b border-gray-700">
+      <h2 class="text-lg font-semibold text-white">Implementation Guide</h2>
+    </div>
+    <div class="p-6">
+      <div class="flex mb-6">
+        <div class="space-y-2">
+          <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-light text-white font-bold">1</span>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-white font-medium mb-2">Add the tracking code to your website</h3>
+          <p class="text-gray-400 mb-3">Copy the tracking code from your project details page and add it to your website's <code class="px-1 py-0.5 bg-gray-700 rounded text-xs">head</code> tag.</p>
+          <a href="{{ url_for('project.detail', id=project.id) }}" class="text-primary-light hover:text-primary-dark transition-colors">
+            View tracking code
+            <svg class="inline-block h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+      
+      <div class="flex mb-6">
+        <div class="space-y-2">
+          <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-light text-white font-bold">2</span>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-white font-medium mb-2">Test your implementation</h3>
+          <p class="text-gray-400 mb-3">Use the connection tester above to verify that your website can successfully send events to our API.</p>
+          <div class="bg-gray-900 rounded-lg p-4 mb-2">
+            <p class="text-gray-300 text-sm">For the best test results, open your website in another tab and perform some actions that should trigger events. Then return here to verify the events were received.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex mb-6">
+        <div class="space-y-2">
+          <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-light text-white font-bold">3</span>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-white font-medium mb-2">Track custom events</h3>
+          <p class="text-gray-400 mb-3">Once the basic implementation is working, you can track specific user actions using the tracking API.</p>
+          <div class="bg-gray-900 rounded-lg p-4 font-mono text-sm text-gray-300 overflow-x-auto mb-2">
+            <div class="mb-2 text-gray-500">// Standard version</div>
+            <div>window.ProductAnalytics.track('button_click', {</div>
+            <div>  id: 'signup-button',</div>
+            <div>  category: 'conversion'</div>
+            <div>});</div>
+            <div class="mt-4 mb-2 text-gray-500">// Simplified version</div>
+            <div>pa.track('button_click', {</div>
+            <div>  id: 'signup-button',</div>
+            <div>  category: 'conversion'</div>
+            <div>});</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex">
+        <div class="space-y-2">
+          <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-light text-white font-bold">4</span>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-white font-medium mb-2">View your analytics</h3>
+          <p class="text-gray-400 mb-3">Once data starts flowing in, you can view insights and analytics in your dashboard.</p>
+          <div class="flex space-x-3">
+            <a href="{{ url_for('project.analytics', id=project.id) }}" class="inline-flex items-center px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded-md transition-colors">
+              <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+              View Analytics
+            </a>
+            <a href="{{ url_for('project.ml_insights', id=project.id) }}" class="inline-flex items-center px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors">
+              <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+              View ML Insights
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Troubleshooting Card -->
+  <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden shadow-lg mb-6 animate-slide-up" style="animation-delay: 200ms;">
+    <div class="px-6 py-4 border-b border-gray-700">
+      <h2 class="text-lg font-semibold text-white">Troubleshooting</h2>
+    </div>
+    <div class="p-6">
+      <div class="space-y-4">
+        <div class="bg-gray-900 rounded-lg p-4">
+          <h3 class="text-white font-medium mb-2">Events not showing up?</h3>
+          <div class="text-gray-400">
+            <ul class="list-disc list-inside space-y-2">
+              <li>Check that the tracking code is correctly installed in the <code class="px-1 py-0.5 bg-gray-700 rounded text-xs">head</code> tag of your website</li>
+              <li>Verify that your website's domain allows sending requests to our API (CORS settings)</li>
+              <li>Check if your browser has content blockers that might prevent the tracking script from loading</li>
+              <li>Look for JavaScript errors in your browser's developer console</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="bg-gray-900 rounded-lg p-4">
+          <h3 class="text-white font-medium mb-2">Need help with custom tracking?</h3>
+          <div class="text-gray-400">
+            <p class="mb-2">Check out our developer documentation for detailed API references and examples:</p>
+            <a href="#" class="text-primary-light hover:text-primary-dark transition-colors">
+              View Documentation
+              <svg class="inline-block h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Elements
+    const connectionStatusEl = document.getElementById('connection-status');
+    const statusBadgeEl = document.getElementById('status-badge');
+    const apiStatusEl = document.getElementById('api-status');
+    const testConnectionBtn = document.getElementById('test-connection-btn');
+    const sendTestEventBtn = document.getElementById('send-test-event-btn');
+    const testResultsContainer = document.getElementById('test-results-container');
+    const testResultsContent = document.getElementById('test-results-content');
+    const testVerdict = document.getElementById('test-verdict');
+    const connectionPath = document.getElementById('connection-path');
+    const dataPacket1 = document.getElementById('data-packet-1');
+    const dataPacket2 = document.getElementById('data-packet-2');
+    
+    // Test the connection automatically on page load
+    checkApiConnection();
+    
+    // Test connection button click
+    testConnectionBtn.addEventListener('click', function() {
+      // Show loading state
+      testConnectionBtn.classList.add('opacity-50', 'pointer-events-none');
+      testConnectionBtn.innerHTML = `
+        <svg class="animate-spin h-4 w-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Testing...
+      `;
+      
+      // Reset animation
+      resetConnectionAnimation('testing');
+      
+      // Check connection
+      checkApiConnection(true).then(() => {
+        // Reset button
+        testConnectionBtn.classList.remove('opacity-50', 'pointer-events-none');
+        testConnectionBtn.innerHTML = `
+          <svg class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+          </svg>
+          Test Connection
+        `;
+      });
+    });
+    
+    // Send test event button click
+    sendTestEventBtn.addEventListener('click', function() {
+      // Show loading state
+      sendTestEventBtn.classList.add('opacity-50', 'pointer-events-none');
+      sendTestEventBtn.innerHTML = `
+        <svg class="animate-spin h-4 w-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Sending...
+      `;
+      
+      // Reset animation
+      resetConnectionAnimation('testing');
+      
+      // Send test event
+      sendTestEvent().then(() => {
+        // Reset button
+        sendTestEventBtn.classList.remove('opacity-50', 'pointer-events-none');
+        sendTestEventBtn.innerHTML = `
+          <svg class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+          </svg>
+          Send Test Event
+        `;
+      });
+    });
+    
+    // Function to check API connection
+    async function checkApiConnection(showResults = false) {
+      try {
+        // Make a request to the test endpoint
+        const response = await fetch('{{ request.host_url }}api/events/test', {
+          method: 'GET',
+        });
+        
+        // Parse the response
+        const data = await response.json();
+        
+        // Update connection status
+        if (response.ok) {
+          updateConnectionStatus('connected');
+          apiStatusEl.innerHTML = `<span class="text-green-400">Connected</span>`;
+          
+          if (showResults) {
+            displayTestResults({
+              success: true,
+              endpoint: '{{ request.host_url }}api/events/test',
+              status: response.status,
+              data: data
+            });
+          }
+        } else {
+          updateConnectionStatus('error');
+          apiStatusEl.innerHTML = `<span class="text-red-400">Error (${response.status})</span>`;
+          
+          if (showResults) {
+            displayTestResults({
+              success: false,
+              endpoint: '{{ request.host_url }}api/events/test',
+              status: response.status,
+              data: data
+            });
+          }
+        }
+      } catch (error) {
+        updateConnectionStatus('error');
+        apiStatusEl.innerHTML = `<span class="text-red-400">Connection Failed</span>`;
+        
+        if (showResults) {
+          displayTestResults({
+            success: false,
+            endpoint: '{{ request.host_url }}api/events/test',
+            error: error.message
+          });
+        }
+      }
+    }
+    
+    // Function to send a test event
+    async function sendTestEvent() {
+      try {
+        // Prepare the event data
+        const eventData = {
+          project_id: '{{ project.tracking_id }}',
+          event_name: 'test_event',
+          properties: {
+            source: 'connection_test_page',
+            timestamp: new Date().toISOString()
+          },
+          anonymous_id: generateId(),
+          timestamp: new Date().toISOString()
+        };
+        
+        // Make a request to the events endpoint
+        const response = await fetch('{{ request.host_url }}api/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(eventData)
+        });
+        
+        // Parse the response
+        const data = await response.json();
+        
+        // Update connection status
+        if (response.ok) {
+          updateConnectionStatus('connected');
+          apiStatusEl.innerHTML = `<span class="text-green-400">Connected</span>`;
+          
+          displayTestResults({
+            success: true,
+            endpoint: '{{ request.host_url }}api/events',
+            status: response.status,
+            data: data,
+            eventData: eventData
+          });
+        } else {
+          updateConnectionStatus('error');
+          apiStatusEl.innerHTML = `<span class="text-red-400">Error (${response.status})</span>`;
+          
+          displayTestResults({
+            success: false,
+            endpoint: '{{ request.host_url }}api/events',
+            status: response.status,
+            data: data,
+            eventData: eventData
+          });
+        }
+      } catch (error) {
+        updateConnectionStatus('error');
+        apiStatusEl.innerHTML = `<span class="text-red-400">Connection Failed</span>`;
+        
+        displayTestResults({
+          success: false,
+          endpoint: '{{ request.host_url }}api/events',
+          error: error.message,
+          eventData: {
+            project_id: '{{ project.tracking_id }}',
+            event_name: 'test_event',
+            properties: {
+              source: 'connection_test_page'
+            }
+          }
+        });
+      }
+    }
+    
+    // Function to update connection status UI
+    function updateConnectionStatus(status) {
+      // Update the connection status badge
+      if (status === 'connected') {
+        statusBadgeEl.className = 'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-900 text-green-200';
+        statusBadgeEl.innerHTML = `
+          <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          Connected
+        `;
+        
+        // Update connection path
+        connectionPath.setAttribute('stroke', '#10b981'); // Green
+        connectionPath.setAttribute('stroke-dasharray', '');
+      } else if (status === 'error') {
+        statusBadgeEl.className = 'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-900 text-red-200';
+        statusBadgeEl.innerHTML = `
+          <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+          Connection Failed
+        `;
+        
+        // Update connection path
+        connectionPath.setAttribute('stroke', '#ef4444'); // Red
+        connectionPath.setAttribute('stroke-dasharray', '');
+      } else if (status === 'testing') {
+        statusBadgeEl.className = 'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-900 text-yellow-200';
+        statusBadgeEl.innerHTML = `
+          <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-yellow-200" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Testing Connection...
+        `;
+        
+        // Update connection path
+        connectionPath.setAttribute('stroke', '#f59e0b'); // Yellow
+        connectionPath.setAttribute('stroke-dasharray', '5,5');
+      }
+    }
+    
+    // Function to reset connection animation
+    function resetConnectionAnimation(status) {
+      // Reset the animation by removing and re-adding the elements
+      const parent = connectionPath.parentNode;
+      const connectionPathClone = connectionPath.cloneNode(true);
+      parent.removeChild(connectionPath);
+      parent.appendChild(connectionPathClone);
+      
+      // Update status
+      updateConnectionStatus(status);
+    }
+    
+    // Function to display test results
+    function displayTestResults(results) {
+      // Show the results container
+      testResultsContainer.classList.remove('hidden');
+      
+      // Format the results
+      let formattedContent = '';
+      
+      if (results.eventData) {
+        formattedContent += `<div class="mb-4">
+          <div class="mb-2 text-gray-400 font-bold">Event Data Sent:</div>
+          <div class="text-gray-300">
+            <pre>${JSON.stringify(results.eventData, null, 2)}</pre>
+          </div>
+        </div>`;
+      }
+      
+      formattedContent += `<div class="mb-4">
+        <div class="mb-2 text-gray-400 font-bold">Endpoint:</div>
+        <div class="text-gray-300">${results.endpoint}</div>
+      </div>`;
+      
+      if (results.status) {
+        formattedContent += `<div class="mb-4">
+          <div class="mb-2 text-gray-400 font-bold">Status Code:</div>
+          <div class="text-${results.success ? 'green' : 'red'}-400">${results.status} ${results.success ? '✓' : '✗'}</div>
+        </div>`;
+      }
+      
+      if (results.data) {
+        formattedContent += `<div class="mb-4">
+          <div class="mb-2 text-gray-400 font-bold">Response:</div>
+          <div class="text-gray-300">
+            <pre>${JSON.stringify(results.data, null, 2)}</pre>
+          </div>
+        </div>`;
+      }
+      
+      if (results.error) {
+        formattedContent += `<div class="mb-4">
+          <div class="mb-2 text-gray-400 font-bold">Error:</div>
+          <div class="text-red-400">${results.error}</div>
+        </div>`;
+      }
+      
+      // Set the content
+      testResultsContent.innerHTML = formattedContent;
+      
+      // Set the verdict
+      let verdictContent = '';
+      if (results.success) {
+        verdictContent = `
+          <div class="p-4 rounded-lg test-success">
+            <div class="flex items-start">
+              <svg class="h-5 w-5 mr-3 text-green-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <div>
+                <h4 class="font-medium text-green-400">Connection Successful!</h4>
+                <p class="text-gray-300 mt-1">The test was successful. Your implementation is working correctly.</p>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        verdictContent = `
+          <div class="p-4 rounded-lg test-error">
+            <div class="flex items-start">
+              <svg class="h-5 w-5 mr-3 text-red-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <div>
+                <h4 class="font-medium text-red-400">Connection Failed</h4>
+                <p class="text-gray-300 mt-1">The test failed. Please check the error message and troubleshoot using the guide below.</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      
+      // Set the verdict content
+      testVerdict.innerHTML = verdictContent;
+      
+      // Scroll to the results
+      testResultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    // Helper function to generate a UUID
+    function generateId() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+  });
+</script>
+{% endblock %}

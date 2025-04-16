@@ -1,0 +1,573 @@
+{% extends "base.html" %}
+
+{% block head %}
+<script src="https://cdn.plot.ly/plotly-2.18.0.min.js"></script>
+<style>
+    /* Custom styles for dark theme charts */
+    .js-plotly-plot .plotly .main-svg {
+        background-color: transparent !important;
+    }
+    .js-plotly-plot .plotly .bg {
+        fill: transparent !important;
+    }
+    /* Ensure the loading spinner is visible on dark backgrounds */
+    .loading-spinner {
+        filter: invert(1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Breadcrumb -->
+    <nav class="py-4 animate-fade-in">
+        <ol class="flex text-sm">
+            <li class="flex items-center">
+                <a href="{{ url_for('project.list') }}" class="text-gray-400 hover:text-primary-light transition-colors">Projects</a>
+                <svg class="h-4 w-4 mx-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </li>
+            <li class="flex items-center">
+                <a href="{{ url_for('project.detail', id=project.id) }}" class="text-gray-400 hover:text-primary-light transition-colors">{{ project.name }}</a>
+                <svg class="h-4 w-4 mx-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </li>
+            <li class="text-gray-300">Analytics</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 animate-slide-up">
+        <div>
+            <h1 class="text-2xl font-bold text-white">{{ project.name }} Analytics</h1>
+            <p class="text-gray-400 mt-1">Gain insights into your user behavior and product performance</p>
+        </div>
+        <div class="mt-4 md:mt-0 flex space-x-2">
+            <!-- Time Period Dropdown -->
+            <div class="relative">
+                <button id="timeframeDropdown" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-200 hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-light">
+                    {{ time_period|capitalize }}
+                    <svg class="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div id="timeframeMenu" class="hidden absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-gray-800 border border-gray-700 z-10 animate-fade-in">
+                    <div class="py-1">
+                        <a href="{{ url_for('project.analytics', id=project.id, time_period='day') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 {% if time_period == 'day' %}bg-gray-700{% endif %}">Day</a>
+                        <a href="{{ url_for('project.analytics', id=project.id, time_period='week') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 {% if time_period == 'week' %}bg-gray-700{% endif %}">Week</a>
+                        <a href="{{ url_for('project.analytics', id=project.id, time_period='month') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 {% if time_period == 'month' %}bg-gray-700{% endif %}">Month</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Refresh Button -->
+            <button id="refreshData" class="inline-flex items-center px-4 py-2 bg-primary border border-primary-dark rounded-md text-white hover:bg-primary-dark transition-colors">
+                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Refresh Data
+            </button>
+        </div>
+    </div>
+
+    <!-- Metrics Row -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-slide-up" style="animation-delay: 100ms;">
+        <!-- Active Users -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700 p-6 hover:border-primary-light transition-all transform hover:translate-y-[-2px] hover:shadow-lg">
+            <h6 class="text-gray-400 text-sm font-medium">Active Users</h6>
+            <p class="text-3xl font-bold text-white mt-2">{{ active_users.count }}</p>
+            <div class="flex items-center mt-2">
+                <span class="inline-flex items-center {% if active_users.change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                    <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        {% if active_users.change >= 0 %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        {% else %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+                        {% endif %}
+                    </svg>
+                    {{ active_users.change_percent }}%
+                </span>
+                <span class="text-gray-500 text-sm ml-2">from previous {{ time_period }}</span>
+            </div>
+        </div>
+
+        <!-- Total Events -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700 p-6 hover:border-primary-light transition-all transform hover:translate-y-[-2px] hover:shadow-lg">
+            <h6 class="text-gray-400 text-sm font-medium">Total Events</h6>
+            <p class="text-3xl font-bold text-white mt-2">{{ total_events }}</p>
+            <div class="flex items-center mt-2">
+                <span class="inline-flex items-center text-blue-400">
+                    <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Last {{ time_period }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Events Per User -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700 p-6 hover:border-primary-light transition-all transform hover:translate-y-[-2px] hover:shadow-lg">
+            <h6 class="text-gray-400 text-sm font-medium">Events Per User</h6>
+            <p class="text-3xl font-bold text-white mt-2">{{ events_per_user }}</p>
+            <div class="flex items-center mt-2">
+                <span class="inline-flex items-center text-purple-400">
+                    <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    Average per user
+                </span>
+            </div>
+        </div>
+
+        <!-- Anomalies -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700 p-6 hover:border-primary-light transition-all transform hover:translate-y-[-2px] hover:shadow-lg relative">
+            <h6 class="text-gray-400 text-sm font-medium">Anomalies</h6>
+            <p class="text-3xl font-bold text-white mt-2">{{ anomalies.anomalies|length }}</p>
+            <div class="flex items-center mt-2">
+                <span class="inline-flex items-center {% if anomalies.has_anomalies %}text-red-400{% else %}text-green-400{% endif %}">
+                    <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        {% if anomalies.has_anomalies %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        {% else %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        {% endif %}
+                    </svg>
+                    {{ anomalies.message }}
+                </span>
+            </div>
+            {% if anomalies.has_anomalies %}
+            <button class="absolute top-2 right-2 px-2 py-1 bg-red-900 bg-opacity-50 hover:bg-opacity-70 text-red-100 text-xs rounded-md transition-colors" data-modal-target="anomaliesModal">
+                <svg class="h-3 w-3 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+                View
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 animate-slide-up" style="animation-delay: 200ms;">
+        <!-- Event Frequency Chart -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+            <div class="px-4 py-3 border-b border-gray-700">
+                <h5 class="font-medium text-white">Event Frequency</h5>
+            </div>
+            <div class="p-4">
+                <div id="eventFrequencyChart" class="w-full h-64 lg:h-[300px]"></div>
+            </div>
+        </div>
+
+        <!-- Top Events Chart -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+            <div class="px-4 py-3 border-b border-gray-700">
+                <h5 class="font-medium text-white">Top Events</h5>
+            </div>
+            <div class="p-4">
+                <div id="topEventsChart" class="w-full h-64 lg:h-[300px]"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Segments -->
+    <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden mb-8 animate-slide-up" style="animation-delay: 300ms;">
+        <div class="px-4 py-3 border-b border-gray-700">
+            <h5 class="font-medium text-white">User Segments</h5>
+        </div>
+        <div class="p-4">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Chart -->
+                <div class="lg:col-span-4">
+                    <div id="userSegmentsChart" class="w-full h-64 lg:h-[300px]"></div>
+                </div>
+                
+                <!-- Table -->
+                <div class="lg:col-span-8">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-700">
+                            <thead>
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Segment</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Users</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Percentage</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Description</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-700">
+                                <tr class="hover:bg-gray-700 transition-colors">
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-indigo-900 text-indigo-200">Power Users</span>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-gray-300">{{ user_segments.metrics.segment_counts.power_users }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-gray-300">{{ user_segments.metrics.segment_percentages.power_users }}%</td>
+                                    <td class="px-4 py-3 text-gray-300">Users with high engagement, frequently interacting with your product</td>
+                                </tr>
+                                <tr class="hover:bg-gray-700 transition-colors">
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-900 text-green-200">Casual Users</span>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-gray-300">{{ user_segments.metrics.segment_counts.casual_users }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-gray-300">{{ user_segments.metrics.segment_percentages.casual_users }}%</td>
+                                    <td class="px-4 py-3 text-gray-300">Regular users with moderate engagement</td>
+                                </tr>
+                                <tr class="hover:bg-gray-700 transition-colors">
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-900 text-blue-200">New Users</span>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-gray-300">{{ user_segments.metrics.segment_counts.new_users }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-gray-300">{{ user_segments.metrics.segment_percentages.new_users }}%</td>
+                                    <td class="px-4 py-3 text-gray-300">Recent users with limited interactions so far</td>
+                                </tr>
+                                <tr class="hover:bg-gray-700 transition-colors">
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-700 text-gray-300">Inactive Users</span>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-gray-300">{{ user_segments.metrics.segment_counts.inactive_users }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-gray-300">{{ user_segments.metrics.segment_percentages.inactive_users }}%</td>
+                                    <td class="px-4 py-3 text-gray-300">Users who haven't engaged recently</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI/ML Approach Section -->
+    <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden mb-8 animate-slide-up" style="animation-delay: 400ms;">
+        <div class="px-4 py-3 border-b border-gray-700">
+            <h5 class="font-medium text-white">AI/ML Approach</h5>
+        </div>
+        <div class="p-6">
+            <p class="text-gray-300 mb-6">Our analytics platform leverages artificial intelligence and machine learning to provide deeper insights into your user behavior and product performance. Here's how we use AI/ML:</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Card 1 -->
+                <div class="bg-gray-900 rounded-lg border border-gray-700 p-5 hover:border-primary-light transition-all transform hover:translate-y-[-2px]">
+                    <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-900 bg-opacity-40 text-indigo-400 mb-4">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                        </svg>
+                    </div>
+                    <h5 class="text-white text-lg font-medium mb-2">Pattern Recognition</h5>
+                    <p class="text-gray-400 mb-4">We automatically detect usage patterns across user segments to identify common behaviors and interactions.</p>
+                    <p class="text-gray-500 text-xs">Using: Clustering algorithms, Sequential pattern mining</p>
+                </div>
+                
+                <!-- Card 2 -->
+                <div class="bg-gray-900 rounded-lg border border-gray-700 p-5 hover:border-primary-light transition-all transform hover:translate-y-[-2px]">
+                    <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-yellow-900 bg-opacity-40 text-yellow-400 mb-4">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <h5 class="text-white text-lg font-medium mb-2">Anomaly Detection</h5>
+                    <p class="text-gray-400 mb-4">We identify unusual patterns in your data that might indicate problems or opportunities.</p>
+                    <p class="text-gray-500 text-xs">Using: Statistical analysis, Time-series forecasting</p>
+                </div>
+                
+                <!-- Card 3 -->
+                <div class="bg-gray-900 rounded-lg border border-gray-700 p-5 hover:border-primary-light transition-all transform hover:translate-y-[-2px]">
+                    <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-900 bg-opacity-40 text-green-400 mb-4">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <h5 class="text-white text-lg font-medium mb-2">User Segmentation</h5>
+                    <p class="text-gray-400 mb-4">We group users based on their behavior to help you understand different user types.</p>
+                    <p class="text-gray-500 text-xs">Using: K-means clustering, Behavioral analysis</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Anomalies Modal -->
+{% if anomalies.has_anomalies %}
+<div id="anomaliesModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" id="modal-backdrop"></div>
+        
+        <div class="relative bg-gray-800 rounded-lg max-w-md w-full mx-auto shadow-xl border border-gray-700 z-10">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-700">
+                <h5 class="text-lg font-medium text-white">Detected Anomalies</h5>
+                <button type="button" class="text-gray-400 hover:text-white" id="close-modal">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-4">
+                <div class="mb-4 p-3 bg-yellow-900 bg-opacity-30 border border-yellow-800 rounded-md text-yellow-200">
+                    <div class="flex items-start">
+                        <svg class="h-5 w-5 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div>
+                            <p>Anomalies are unusual patterns in your data that might indicate issues or opportunities.</p>
+                            <p class="mt-1 text-sm">Confidence level: {{ anomalies.confidence * 100 }}%</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-700">
+                        <thead>
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Time</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Count</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Z-Score</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Severity</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-700">
+                            {% for anomaly in anomalies.anomalies %}
+                            <tr class="hover:bg-gray-700">
+                                <td class="px-4 py-3 whitespace-nowrap text-gray-300">{{ anomaly.period }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-gray-300">{{ anomaly.count }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-gray-300">{{ anomaly.z_score }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full 
+                                        {% if anomaly.severity == 'high' %}bg-red-900 text-red-200{% else %}bg-yellow-900 text-yellow-200{% endif %}">
+                                        {{ anomaly.severity }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="border-t border-gray-700 px-4 py-3 flex justify-end">
+                <button type="button" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md" id="close-modal-btn">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle dropdown
+        const timeframeDropdown = document.getElementById('timeframeDropdown');
+        const timeframeMenu = document.getElementById('timeframeMenu');
+        
+        if (timeframeDropdown && timeframeMenu) {
+            timeframeDropdown.addEventListener('click', function() {
+                timeframeMenu.classList.toggle('hidden');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!timeframeDropdown.contains(event.target) && !timeframeMenu.contains(event.target)) {
+                    timeframeMenu.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Modal functionality
+        const modalTriggers = document.querySelectorAll('[data-modal-target]');
+        const modalClosers = document.querySelectorAll('#close-modal, #close-modal-btn, #modal-backdrop');
+        
+        modalTriggers.forEach(trigger => {
+            trigger.addEventListener('click', () => {
+                const modal = document.getElementById(trigger.dataset.modalTarget);
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    document.body.classList.add('overflow-hidden');
+                }
+            });
+        });
+        
+        modalClosers.forEach(closer => {
+            closer.addEventListener('click', () => {
+                const modals = document.querySelectorAll('.fixed.inset-0.z-50');
+                modals.forEach(modal => {
+                    modal.classList.add('hidden');
+                    document.body.classList.remove('overflow-hidden');
+                });
+            });
+        });
+        
+        // Initialize charts with a dark theme
+        try {
+            // Common layout settings for dark theme
+            const darkTheme = {
+                font: {
+                    family: 'system-ui, -apple-system, sans-serif',
+                    color: '#d1d5db' // text-gray-300
+                },
+                paper_bgcolor: 'rgba(31, 41, 55, 0)', // bg-gray-800 with transparency
+                plot_bgcolor: 'rgba(31, 41, 55, 0)',
+                autosize: true,
+                margin: { t: 10, r: 20, l: 50, b: 50 },
+                xaxis: {
+                    gridcolor: '#374151', // gray-700
+                    zerolinecolor: '#374151'
+                },
+                yaxis: {
+                    gridcolor: '#374151',
+                    zerolinecolor: '#374151'
+                }
+            };
+            
+            // Event Frequency Chart
+            var eventFrequencyData = [{
+                x: {{ event_frequency.periods|tojson|default('[]') }},
+                y: {{ event_frequency.counts|tojson|default('[]') }},
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: {
+                    color: '#6366f1', // primary color
+                    width: 3
+                },
+                marker: {
+                    color: '#6366f1',
+                    size: 8
+                }
+            }];
+            
+            var eventFrequencyLayout = {
+                ...darkTheme,
+                xaxis: {
+                    ...darkTheme.xaxis,
+                    title: {
+                        text: '{{ time_period|capitalize|default("Time") }}',
+                        font: {
+                            color: '#9ca3af' // text-gray-400
+                        }
+                    }
+                },
+                yaxis: {
+                    ...darkTheme.yaxis,
+                    title: {
+                        text: 'Event Count',
+                        font: {
+                            color: '#9ca3af'
+                        }
+                    }
+                }
+            };
+            
+            Plotly.newPlot('eventFrequencyChart', eventFrequencyData, eventFrequencyLayout, {
+                responsive: true,
+                displayModeBar: false
+            });
+            
+            // Top Events Chart
+            var topEventsData = [{
+                x: {{ top_events.counts|tojson|default('[]') }},
+                y: {{ top_events.events|tojson|default('[]') }},
+                type: 'bar',
+                orientation: 'h',
+                marker: {
+                    color: '#4cc9f0'
+                }
+            }];
+            
+            var topEventsLayout = {
+                ...darkTheme,
+                margin: { t: 10, r: 20, l: 150, b: 50 },
+                xaxis: {
+                    ...darkTheme.xaxis,
+                    title: {
+                        text: 'Count',
+                        font: {
+                            color: '#9ca3af'
+                        }
+                    }
+                }
+            };
+            
+            Plotly.newPlot('topEventsChart', topEventsData, topEventsLayout, {
+                responsive: true,
+                displayModeBar: false
+            });
+            
+            // User Segments Chart
+            var segmentLabels = ['Power Users', 'Casual Users', 'New Users', 'Inactive Users'];
+            var segmentCounts = [
+                {{ user_segments.metrics.segment_counts.power_users|default(0) }},
+                {{ user_segments.metrics.segment_counts.casual_users|default(0) }},
+                {{ user_segments.metrics.segment_counts.new_users|default(0) }},
+                {{ user_segments.metrics.segment_counts.inactive_users|default(0) }}
+            ];
+            var segmentColors = ['#6366f1', '#10b981', '#3b82f6', '#6b7280'];
+            
+            var userSegmentsData = [{
+                labels: segmentLabels,
+                values: segmentCounts,
+                type: 'pie',
+                textinfo: 'percent',
+                hoverinfo: 'label+value+percent',
+                textfont: {
+                    color: '#f9fafb'
+                },
+                marker: {
+                    colors: segmentColors
+                }
+            }];
+            
+            var userSegmentsLayout = {
+                ...darkTheme,
+                margin: { t: 10, r: 10, l: 10, b: 10 },
+                showlegend: false
+            };
+            
+            Plotly.newPlot('userSegmentsChart', userSegmentsData, userSegmentsLayout, {
+                responsive: true,
+                displayModeBar: false
+            });
+        } catch (error) {
+            console.error('Error rendering charts:', error);
+            // Display a fallback message if charts fail to render
+            document.querySelectorAll('.w-full.h-64').forEach(function(container) {
+                container.innerHTML = `
+                    <div class="flex items-center justify-center h-full">
+                        <div class="bg-yellow-900 bg-opacity-30 text-yellow-200 px-4 py-3 rounded-md border border-yellow-800">
+                            <p class="flex items-center">
+                                <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                </svg>
+                                Chart data not available. Try refreshing the page.
+                            </p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        // Refresh button
+        const refreshButton = document.getElementById('refreshData');
+        if (refreshButton) {
+            refreshButton.addEventListener('click', function() {
+                this.classList.add('opacity-50', 'pointer-events-none');
+                
+                // Add spinning animation to the icon
+                const icon = this.querySelector('svg');
+                if (icon) {
+                    icon.classList.add('animate-spin');
+                }
+                
+                // Add a small delay before reloading to show the animation
+                setTimeout(() => {
+                    location.reload();
+                }, 500);
+            });
+        }
+    });
+</script>
+{% endblock %}

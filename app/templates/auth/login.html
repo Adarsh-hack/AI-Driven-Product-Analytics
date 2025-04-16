@@ -1,0 +1,68 @@
+{# LOGIN PAGE #}
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 animate-fade-in">
+    <div class="max-w-md w-full space-y-8 bg-gray-800 p-8 rounded-lg border border-gray-700 shadow-xl">
+        <div class="text-center">
+            <h2 class="text-3xl font-bold text-white mb-2">Sign In</h2>
+            <p class="text-gray-400">Welcome back to Product Analytics</p>
+        </div>
+        
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="mb-4 p-3 rounded-md 
+                    {% if category == 'success' %} bg-green-900 bg-opacity-30 text-green-200 border border-green-800
+                    {% elif category == 'danger' %} bg-red-900 bg-opacity-30 text-red-200 border border-red-800
+                    {% elif category == 'warning' %} bg-yellow-900 bg-opacity-30 text-yellow-200 border border-yellow-800
+                    {% else %} bg-blue-900 bg-opacity-30 text-blue-200 border border-blue-800
+                    {% endif %}">
+                    <p>{{ message }}</p>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <form method="post" action="{{ url_for('auth.login') }}" class="mt-8 space-y-6">
+            {{ form.hidden_tag() }}
+            
+            <div class="space-y-4">
+                <div>
+                    <label for="{{ form.username.id }}" class="block text-sm font-medium text-gray-300">{{ form.username.label.text }}</label>
+                    {{ form.username(class="mt-1 block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-primary-light focus:border-primary-light") }}
+                    {% for error in form.username.errors %}
+                    <span class="text-sm text-red-400">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.password.id }}" class="block text-sm font-medium text-gray-300">{{ form.password.label.text }}</label>
+                    {{ form.password(class="mt-1 block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-primary-light focus:border-primary-light") }}
+                    {% for error in form.password.errors %}
+                    <span class="text-sm text-red-400">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                
+                <div class="flex items-center">
+                    {{ form.remember_me(class="h-4 w-4 text-primary border-gray-700 rounded bg-gray-900 focus:ring-primary-light") }}
+                    <label for="{{ form.remember_me.id }}" class="ml-2 block text-sm text-gray-300">{{ form.remember_me.label.text }}</label>
+                </div>
+            </div>
+            
+            <div>
+                {{ form.submit(class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-primary-light transition-colors") }}
+            </div>
+        </form>
+        
+        <div class="text-center mt-6">
+            <p class="text-gray-400">New to Product Analytics? 
+                <a href="{{ url_for('auth.register') }}" class="text-primary-light hover:text-primary-dark transition-colors">
+                    Create an account
+                </a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if title %}{{ title }} - {% endif %}Product Analytics</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#6366f1',
+                            dark: '#4f46e5',
+                            light: '#818cf8'
+                        },
+                        dark: {
+                            DEFAULT: '#1e1e2d',
+                            lighter: '#2d2d3a',
+                            lightest: '#34343f'
+                        }
+                    },
+                    maxWidth: {
+                        '6xl': '72rem',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'pulse-slow': 'pulse 3s infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                    },
+                }
+            },
+        }
+    </script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Styles -->
+    <style>
+        /* Loading spinner animation */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Smooth transitions */
+        .transition-all {
+            transition: all 0.3s ease;
+        }
+    </style>
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-900 text-gray-200 min-h-screen flex flex-col">
+    <!-- Top Navigation -->
+    <nav class="bg-gray-8\900 border-b border-gray-700">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex justify-between h-16">
+                <!-- Logo and Main Nav -->
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="{% if current_user.is_authenticated %}{{ url_for('dashboard.index') }}{% else %}{{ url_for('landing.index') }}{% endif %}" class="text-primary-light flex items-center transition-all hover:text-primary">
+                            <i class="fas fa-chart-line mr-2 text-xl"></i>
+                            <span class="font-semibold text-lg">Product Analytics</span>
+                        </a>
+                    </div>
+                    
+                    <!-- Desktop Nav Links -->
+                    <div class="hidden sm:ml-6 sm:flex space-x-4 items-center">
+                        {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('dashboard.index') }}" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-dark-lightest hover:text-primary-light transition-all">
+                            <i class="fas fa-tachometer-alt mr-1"></i>Dashboard
+                        </a>
+                        <a href="{{ url_for('project.list') }}" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-dark-lightest hover:text-primary-light transition-all">
+                            <i class="fas fa-folder mr-1"></i>Projects
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Right Side Navigation -->
+                <div class="flex items-center">
+                    {% if current_user.is_authenticated %}
+                    <!-- User Dropdown -->
+                    <div class="ml-3 relative group">
+                        <div>
+                            <button class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary focus:ring-white">
+                                <span class="mr-2 text-sm">{{ current_user.username }}</span>
+                                <div class="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            </button>
+                        </div>
+                        
+                        <!-- Dropdown Menu -->
+                        <div class="hidden group-hover:block origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-dark-lightest ring-1 ring-black ring-opacity-5 z-50 animate-fade-in">
+                            <a href="#" class="block px-4 py-2 text-sm hover:bg-dark-DEFAULT hover:text-primary-light">
+                                <i class="fas fa-user mr-2"></i>Profile
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-sm hover:bg-dark-DEFAULT hover:text-primary-light">
+                                <i class="fas fa-cog mr-2"></i>Settings
+                            </a>
+                            <div class="border-t border-gray-700 my-1"></div>
+                            <a href="{{ url_for('auth.logout') }}" class="block px-4 py-2 text-sm hover:bg-dark-DEFAULT hover:text-primary-light">
+                                <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Login/Register Links -->
+                    <a href="{{ url_for('auth.login') }}" class="px-3 py-2 rounded-md text-sm font-medium hover:text-primary-light transition-all">
+                        <i class="fas fa-sign-in-alt mr-1"></i>Login
+                    </a>
+                    <a href="{{ url_for('auth.register') }}" class="ml-2 px-3 py-2 rounded-md text-sm font-medium bg-primary hover:bg-primary-dark transition-all">
+                        <i class="fas fa-user-plus mr-1"></i>Register
+                    </a>
+                    {% endif %}
+                    
+                    <!-- Mobile menu button -->
+                    <button type="button" class="sm:hidden ml-3 inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" aria-controls="mobile-menu" aria-expanded="false">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile menu, show/hide based on menu state. -->
+        <div class="sm:hidden" id="mobile-menu">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard.index') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700 hover:text-white">
+                    <i class="fas fa-tachometer-alt mr-1"></i>Dashboard
+                </a>
+                <a href="{{ url_for('project.list') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700 hover:text-white">
+                    <i class="fas fa-folder mr-1"></i>Projects
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow py-8">
+        <!-- Page content will go here -->
+        <div class="animate-fade-in">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-6 border-t border-gray-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p>© 2025 Product Analytics. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Toggle mobile menu
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuButton = document.querySelector('[aria-controls="mobile-menu"]');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', function() {
+                    const expanded = this.getAttribute('aria-expanded') === 'true';
+                    this.setAttribute('aria-expanded', !expanded);
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+            
+            // Simple page transition
+            document.body.classList.add('opacity-0');
+            setTimeout(() => {
+                document.body.classList.remove('opacity-0');
+                document.body.classList.add('transition-opacity', 'duration-500', 'opacity-100');
+            }, 10);
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>
